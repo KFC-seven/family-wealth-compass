@@ -16,6 +16,9 @@
 | InvestorProfile | 投资理念 | belongsTo Member (一对一) |
 | ImportSession | 导入会话 | hasMany RecognizedImportRow |
 | DailyBrief | 每日简报 | JSON 存储结构化内容 |
+| ScheduledJob | 定时任务配置 | hasMany JobRun |
+| JobRun | 任务执行记录 | belongsTo ScheduledJob (optional) |
+| MarketDataSource | 行情数据源配置 | 独立实体 |
 | AppSettings | 家庭级配置 | JSON 存储 |
 
 ## 枚举
@@ -32,6 +35,10 @@
 | RiskPreference | CONSERVATIVE / STABLE / BALANCED / GROWTH / AGGRESSIVE |
 | InvestmentHorizon | SHORT / MEDIUM / LONG / VERY_LONG |
 | AdviceStyle | CONSERVATIVE / BALANCED / POSITIVE_WITH_CONDITIONS / ACTIVE_WITH_TRIGGERS |
+| JobStatus | RUNNING / SUCCESS / FAILED / PARTIAL / SKIPPED |
+| JobTrigger | MANUAL / SCHEDULER / API / SYSTEM |
+| MarketDataSourceType | MOCK / MANUAL / EASTMONEY / TUSHARE / AKSHARE_HTTP / OTHER |
+| MarketDataSourceStatus | HEALTHY / DEGRADED / FAILED / DISABLED |
 
 ## 关键设计取舍
 

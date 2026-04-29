@@ -9,6 +9,9 @@ async function main() {
   console.log("Seeding database...");
 
   // Clean existing data
+  await prisma.jobRun.deleteMany();
+  await prisma.scheduledJob.deleteMany();
+  await prisma.marketDataSource.deleteMany();
   await prisma.recognizedImportRow.deleteMany();
   await prisma.importSession.deleteMany();
   await prisma.dailyBrief.deleteMany();
@@ -175,11 +178,49 @@ async function main() {
   });
   console.log(`  Created app settings`);
 
-  // Portfolio snapshots (30 days + 12 months)
+  // Phase 8: Scheduled Jobs
+  const jobConfigs = [
+    { name: "update-market-prices", displayName: "更新行情/净值", cron: "30 21 * * 1-5", desc: "查询需要更新价格的 Asset，拉取最新行情或净值，写入 PriceSnapshot" },
+    { name: "refresh-holding-snapshots", displayName: "刷新持仓快照", cron: "0 22 * * 1-5", desc: "根据最新价格/净值刷新持仓估值字段" },
+    { name: "generate-portfolio-snapshots", displayName: "生成组合快照", cron: "0 23 * * 1-5", desc: "为家庭/成员/持仓生成当日 PortfolioSnapshot" },
+    { name: "run-daily-valuation", displayName: "每日估值", cron: null, desc: "串行执行: 行情更新 → 持仓刷新 → 组合快照生成" },
+  ];
+  for (const jc of jobConfigs) {
+    await prisma.scheduledJob.create({
+      data: {
+        name: jc.name, displayName: jc.displayName, description: jc.desc,
+        cronExpression: jc.cron, timezone: "Asia/Shanghai", isEnabled: true,
+      },
+    });
+  }
+  console.log(`  Created ${jobConfigs.length} scheduled jobs`);
+
+  // Phase 8: Market Data Sources
+  const sourceConfigs = [
+    { name: "mock", display: "Mock 数据源", type: "MOCK" as const, pri: 10, assets: JSON.parse('["CASH","A_SHARE","US_STOCK","ETF","MUTUAL_FUND","BANK_WEALTH","GOLD_ACCUMULATION","BOND","OTHER"]') },
+    { name: "manual", display: "手动价格", type: "MANUAL" as const, pri: 20, assets: JSON.parse('["CASH","A_SHARE","US_STOCK","ETF","MUTUAL_FUND","BANK_WEALTH","GOLD_ACCUMULATION","BOND","OTHER"]') },
+    { name: "eastmoney-fund", display: "天天基金", type: "EASTMONEY" as const, pri: 30, assets: JSON.parse('["MUTUAL_FUND"]'), enabled: false, status: "DISABLED" as const },
+    { name: "tushare", display: "Tushare Pro", type: "TUSHARE" as const, pri: 40, assets: JSON.parse('["A_SHARE","ETF","MUTUAL_FUND"]'), enabled: false, status: "DISABLED" as const },
+  ];
+  for (const sc of sourceConfigs) {
+    await prisma.marketDataSource.create({
+      data: {
+        name: sc.name, displayName: sc.display, type: sc.type,
+        isEnabled: sc.enabled ?? true, priority: sc.pri,
+        supportedAssetTypes: sc.assets,
+        lastStatus: sc.status ?? "HEALTHY",
+      },
+    });
+  }
+  console.log(`  Created ${sourceConfigs.length} market data sources`);
+
+  // Portfolio snapshots (最近 30 天 + 最近 12 个月)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const snapshots: any[] = [];
-  for (let i = 0; i < 30; i++) {
-    const d = new Date("2025-03-30");
-    d.setDate(d.getDate() + i);
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
     snapshots.push({
       householdId: household.id, scopeType: "HOUSEHOLD" as const,
       date: d, totalAssets: 1300000 + Math.random() * 80000,
@@ -189,24 +230,27 @@ async function main() {
       holdingReturn: 22000, realizedReturn: 13000,
     });
   }
-  for (let i = 0; i < 12; i++) {
-    const d = new Date("2025-05-01");
-    d.setMonth(d.getMonth() + i);
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() - i);
+    d.setDate(1);
     snapshots.push({
       householdId: household.id, scopeType: "HOUSEHOLD" as const,
-      date: d, totalAssets: 1250000 + i * 10000,
-      cashBalance: 130000, holdingMarketValue: 1120000 + i * 10000,
-      dailyReturn: 0, cumulativeReturn: 20000 + i * 2000,
-      holdingReturn: 15000 + i * 1000, realizedReturn: 10000 + i * 500,
+      date: d, totalAssets: 1250000 + (11 - i) * 10000,
+      cashBalance: 130000, holdingMarketValue: 1120000 + (11 - i) * 10000,
+      dailyReturn: 0, cumulativeReturn: 20000 + (11 - i) * 2000,
+      holdingReturn: 15000 + (11 - i) * 1000, realizedReturn: 10000 + (11 - i) * 500,
     });
   }
   await prisma.portfolioSnapshot.createMany({ data: snapshots });
   console.log(`  Created ${snapshots.length} portfolio snapshots`);
 
   // Daily Brief
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
   await prisma.dailyBrief.create({
     data: {
-      householdId: household.id, date: new Date("2026-04-28"),
+      householdId: household.id, date: yesterday,
       status: "GENERATED", title: "每日投资简报",
       summary: "A股三大指数小幅收涨，贵州茅台一季报超预期。",
       householdImpact: JSON.parse('{"direction":"positive","todayReturn":3240.5,"topPositiveAsset":"贵州茅台","topNegativeAsset":"宁德时代"}'),

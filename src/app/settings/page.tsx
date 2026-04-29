@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ChartCard } from "@/components/charts/ChartCard";
 import {
@@ -14,8 +14,9 @@ import {
   mockAppearanceSettings,
 } from "@/data/mock-settings";
 import type { InvestorPhilosophySettings } from "@/types/settings";
-import { User, Shield, Building2, PieChart, Lightbulb, Bell, Database, Clock, Calculator, Palette } from "lucide-react";
+import { User, Shield, Building2, PieChart, Lightbulb, Bell, Database, Clock, Calculator, Palette, Play, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api, USE_API_DATA } from "@/lib/api/api-client";
 
 const SECTIONS = [
   { id: "household", label: "家庭设置", icon: User },
@@ -35,9 +36,99 @@ export default function SettingsPage() {
   const [philosophyMember, setPhilosophyMember] = useState("member-1");
   const [pushEnabled, setPushEnabled] = useState(mockWeChatPushSettings.enabled);
 
+  // Phase 8: API state
+  const [apiJobs, setApiJobs] = useState<Array<{
+    id: string; name: string; displayName: string; description: string | null;
+    cronExpression: string | null; timezone: string; isEnabled: boolean;
+    lastRunAt: string | null; lastStatus: string | null; config: unknown;
+  }> | null>(null);
+  const [apiJobRuns, setApiJobRuns] = useState<Array<{
+    id: string; jobName: string; status: string;
+    startedAt: string; finishedAt: string | null; durationMs: number | null;
+    triggeredBy: string; successCount: number; failureCount: number; skippedCount: number;
+    errorMessage: string | null;
+  }> | null>(null);
+  const [apiSources, setApiSources] = useState<Array<{
+    id: string; name: string; displayName: string; type: string;
+    isEnabled: boolean; priority: number; lastStatus: string;
+    lastCheckedAt: string | null;
+  }> | null>(null);
+  const [runningJob, setRunningJob] = useState(false);
+  const [checkingSources, setCheckingSources] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
+
+  const fetchJobsData = useCallback(async () => {
+    if (!USE_API_DATA) return;
+    try {
+      const [jobs, runs] = await Promise.all([api.jobs(), api.jobsRuns(10)]);
+      setApiJobs(jobs);
+      setApiJobRuns(runs);
+    } catch {
+      // API 不可用时保留 mock
+    }
+  }, []);
+
+  const fetchSourcesData = useCallback(async () => {
+    if (!USE_API_DATA) return;
+    try {
+      const sources = await api.marketDataSources();
+      setApiSources(sources);
+    } catch {
+      // API 不可用时保留 mock
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobsData();
+    fetchSourcesData();
+  }, [fetchJobsData, fetchSourcesData]);
+
+  const handleRunDailyValuation = async () => {
+    if (!USE_API_DATA) {
+      setActionMsg("请设置 NEXT_PUBLIC_USE_API=true 后使用");
+      return;
+    }
+    setRunningJob(true);
+    setActionMsg("");
+    try {
+      const result = await api.runJob("run-daily-valuation");
+      setActionMsg(`执行完成: ${result.status} (成功 ${result.successCount}, 失败 ${result.failureCount})`);
+      fetchJobsData();
+    } catch (err) {
+      setActionMsg(`执行失败: ${(err as Error).message}`);
+    } finally {
+      setRunningJob(false);
+    }
+  };
+
+  const handleCheckSources = async () => {
+    if (!USE_API_DATA) {
+      setActionMsg("请设置 NEXT_PUBLIC_USE_API=true 后使用");
+      return;
+    }
+    setCheckingSources(true);
+    setActionMsg("");
+    try {
+      await api.checkMarketDataSources();
+      setActionMsg("数据源检查完成");
+      fetchSourcesData();
+    } catch (err) {
+      setActionMsg(`检查失败: ${(err as Error).message}`);
+    } finally {
+      setCheckingSources(false);
+    }
+  };
+
   const currentPhilosophy = mockInvestorPhilosophies.find((p) => p.memberId === philosophyMember) || mockInvestorPhilosophies[0];
 
   const ActiveIcon = SECTIONS.find((s) => s.id === activeSection)?.icon || User;
+
+  const jobStatusCn: Record<string, string> = {
+    SUCCESS: "成功", FAILED: "失败", PARTIAL: "部分成功", RUNNING: "运行中", SKIPPED: "已跳过",
+  };
+  const sourceStatusCn: Record<string, string> = {
+    HEALTHY: "正常", DEGRADED: "降级", FAILED: "异常", DISABLED: "已禁用",
+  };
 
   return (
     <div className="space-y-6 animate-in">
@@ -194,46 +285,129 @@ export default function SettingsPage() {
           {activeSection === "datasource" && (
             <SettingsSection title="数据源设置" description="配置各数据源连接状态">
               <div className="grid gap-2">
-                {mockDataSourceSettings.map((ds) => (
+                {(apiSources ?? mockDataSourceSettings.map(ds => ({
+                  id: ds.name, name: ds.name, displayName: ds.name,
+                  type: ds.status === "manual" ? "MANUAL" : "OTHER",
+                  isEnabled: true, priority: 100,
+                  lastStatus: ds.status === "configured" ? "HEALTHY" : ds.status === "error" ? "FAILED" : ds.status === "manual" ? "HEALTHY" : "DISABLED",
+                  lastCheckedAt: null,
+                }))).map((ds) => (
                   <div key={ds.name} className="flex items-center justify-between p-3 rounded-xl border border-border">
                     <div>
-                      <p className="text-sm font-medium">{ds.name}</p>
-                      <p className="text-xs text-muted-foreground">{ds.updateFrequency}</p>
+                      <p className="text-sm font-medium">{ds.displayName || ds.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ds.type}
+                        {ds.lastCheckedAt ? ` · 上次检查: ${new Date(ds.lastCheckedAt).toLocaleString("zh-CN")}` : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={cn(
                         "text-[10px] px-1.5 py-0.5 rounded font-medium",
-                        ds.status === "configured" ? "bg-green-50 text-green-700 dark:bg-green-950/30" :
-                        ds.status === "error" ? "bg-red-50 text-red-700 dark:bg-red-950/30" :
-                        ds.status === "manual" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30" :
+                        ds.lastStatus === "HEALTHY" ? "bg-green-50 text-green-700 dark:bg-green-950/30" :
+                        ds.lastStatus === "DEGRADED" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30" :
+                        ds.lastStatus === "FAILED" ? "bg-red-50 text-red-700 dark:bg-red-950/30" :
                         "bg-muted text-muted-foreground"
                       )}>
-                        {ds.status === "unconfigured" ? "未配置" : ds.status === "configured" ? "已配置" : ds.status === "error" ? "异常" : "手动"}
+                        {sourceStatusCn[ds.lastStatus] ?? ds.lastStatus}
                       </span>
-                      <button className="text-xs text-primary hover:underline" disabled>配置</button>
+                      <span className={cn("w-2 h-2 rounded-full", ds.isEnabled ? "bg-positive" : "bg-neutral")} />
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="flex items-center gap-3 pt-3">
+                <button
+                  onClick={handleCheckSources}
+                  disabled={checkingSources}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  {checkingSources ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  检查数据源
+                </button>
+                {actionMsg && <p className="text-xs text-muted-foreground">{actionMsg}</p>}
               </div>
             </SettingsSection>
           )}
 
           {activeSection === "jobs" && (
             <SettingsSection title="定时任务设置" description="管理后台定时任务">
-              <div className="grid gap-2">
-                {mockScheduledJobs.map((job) => (
+              <div className="grid gap-2 mb-4">
+                {(apiJobs ?? mockScheduledJobs.map(j => ({
+                  id: j.name, name: j.name, displayName: j.name,
+                  description: null, cronExpression: j.schedule, timezone: "Asia/Shanghai",
+                  isEnabled: j.status === "enabled", lastRunAt: null, lastStatus: j.status === "enabled" ? "SUCCESS" : "SKIPPED",
+                  config: {},
+                }))).map((job) => (
                   <div key={job.name} className="flex items-center justify-between p-3 rounded-xl border border-border">
                     <div>
-                      <p className="text-sm font-medium">{job.name}</p>
-                      <p className="text-xs text-muted-foreground">{job.schedule}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{job.displayName}</p>
+                        {job.lastStatus && (
+                          <span className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                            job.lastStatus === "SUCCESS" ? "bg-green-50 text-green-700 dark:bg-green-950/30" :
+                            job.lastStatus === "FAILED" ? "bg-red-50 text-red-700 dark:bg-red-950/30" :
+                            job.lastStatus === "PARTIAL" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30" :
+                            job.lastStatus === "RUNNING" ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30" :
+                            "bg-muted text-muted-foreground"
+                          )}>
+                            {jobStatusCn[job.lastStatus] ?? job.lastStatus}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {job.cronExpression ? `Cron: ${job.cronExpression}` : "按需/手动"}
+                        {job.lastRunAt ? ` · 上次: ${new Date(job.lastRunAt).toLocaleString("zh-CN")}` : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={cn("w-2 h-2 rounded-full", job.status === "enabled" ? "bg-positive" : "bg-neutral")} />
-                      <span className="text-xs text-muted-foreground">{job.status === "enabled" ? "启用" : "未启用"}</span>
-                      <SettingsToggleRow label="" checked={job.status === "enabled"} onChange={() => {}} />
+                      <span className={cn("w-2 h-2 rounded-full", job.isEnabled ? "bg-positive" : "bg-neutral")} />
+                      <span className="text-xs text-muted-foreground">{job.isEnabled ? "启用" : "未启用"}</span>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Recent JobRuns */}
+              {apiJobRuns && apiJobRuns.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">最近执行记录</p>
+                  <div className="grid gap-1.5 max-h-48 overflow-y-auto">
+                    {apiJobRuns.slice(0, 10).map((run) => (
+                      <div key={run.id} className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/50">
+                        <span className={cn(
+                          "px-1 py-0.5 rounded text-[10px] font-medium",
+                          run.status === "SUCCESS" ? "bg-green-50 text-green-700" :
+                          run.status === "FAILED" ? "bg-red-50 text-red-700" :
+                          run.status === "PARTIAL" ? "bg-amber-50 text-amber-700" :
+                          "bg-blue-50 text-blue-700"
+                        )}>{jobStatusCn[run.status] ?? run.status}</span>
+                        <span className="font-medium">{run.jobName}</span>
+                        <span>{run.triggeredBy}</span>
+                        <span>{new Date(run.startedAt).toLocaleString("zh-CN")}</span>
+                        <span className="tabular-nums">成功{run.successCount} 失败{run.failureCount} 跳过{run.skippedCount}</span>
+                        {run.durationMs != null && <span className="tabular-nums">{run.durationMs}ms</span>}
+                        {run.errorMessage && (
+                          <span className="text-red-600 truncate max-w-[200px]" title={run.errorMessage}>
+                            {run.errorMessage}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleRunDailyValuation}
+                  disabled={runningJob}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {runningJob ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  手动运行每日估值
+                </button>
+                {actionMsg && <p className="text-xs text-muted-foreground">{actionMsg}</p>}
               </div>
             </SettingsSection>
           )}
