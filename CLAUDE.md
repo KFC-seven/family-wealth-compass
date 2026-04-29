@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。6个阶段全部完成。
+家庭财富投资管理 Web 应用。9个阶段全部完成。
 
 ## 运行命令
 
@@ -153,6 +153,7 @@ RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSo
   - [x] api:smoke 覆盖 10 个端点
   - [x] seed 日期适配当前时间
   - [x] PostgreSQL 故障排查文档
+  - [x] 全链路验证: api:smoke 10/10 通过, job:daily-valuation SUCCESS (12行情+12持仓+16快照)
 - [ ] 真实OCR/AI/推送/认证
 
 ## 约定
