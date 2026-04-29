@@ -1,0 +1,14 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+.next/
+.claude/
+pgdata/
+pgsql/
+*.log
+dist/
+.turbo/
+prompt_*.txt
+tmp-*.ts

@@ -1,0 +1,80 @@
+# API 合同
+
+## 统一响应格式
+
+成功：
+```json
+{ "ok": true, "data": { ... } }
+```
+
+失败：
+```json
+{ "ok": false, "error": { "code": "ERROR_CODE", "message": "描述", "details": {} } }
+```
+
+## 已实现接口
+
+### GET /api/health
+返回：`{ status: "ok", timestamp: "ISO", uptime: number }`
+
+### GET /api/portfolio/household-summary
+返回：`{ householdId, name, totalAssets, cashBalance, memberCount }`
+
+### GET /api/members
+返回：`[{ id, name, displayName, roleLabel, isAdmin, accounts[], investorProfile? }]`
+
+### GET /api/members/:memberId
+返回：`{ id, name, accounts[], holdings[], investorProfile? }`
+
+### GET /api/members/:memberId/summary
+返回：`{ memberId, name, totalAssets, cashBalance, holdingReturn, realizedReturn, cumulativeReturn, holdingCount, accountCount }`
+
+### GET /api/holdings
+返回：`[{ id, assetName, assetType, marketValue, holdingReturn, cumulativeReturn, ... }]`
+
+### GET /api/holdings/:holdingId
+返回：完整持仓详情含交易记录
+
+### GET /api/holdings/:holdingId/transactions
+返回：`[{ id, type, tradeDate, grossAmount, fee, netAmount, ... }]`
+
+### GET /api/transactions
+返回：最近 50 条交易
+
+### POST /api/transactions
+Body: `{ householdId, memberId, accountId, type, tradeDate, grossAmount, ... }`
+返回：`{ id }`
+
+### GET /api/import-sessions
+返回：最近 20 条导入会话
+
+### POST /api/import-sessions
+Body: `{ householdId, sourcePlatform, saveMode, ... }`
+返回：`{ id }`
+
+### GET /api/daily-brief
+返回：最新简报
+
+### GET /api/settings
+返回：家庭设置
+
+### POST /api/settings
+Body: `{ appearance?, returnMethod?, pushSettings?, ... }`
+返回：`{ id }`
+
+## 错误码
+
+| code | 说明 | HTTP |
+|------|------|------|
+| VALIDATION_ERROR | 输入校验失败 | 400 |
+| NOT_FOUND | 资源不存在 | 404 |
+| DATABASE_ERROR | 数据库错误 | 500 |
+| INTERNAL_ERROR | 服务器内部错误 | 500 |
+| NOT_IMPLEMENTED | 未实现 | 501 |
+
+## 后续接口计划
+
+- GET /api/portfolio/snapshots (趋势图数据)
+- POST /api/import-sessions/:sessionId/confirm
+- GET /api/daily-brief/:briefId
+- 逐页 API 接入前端

@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum PermissionMode {
+  ALL_VISIBLE
+  CUSTOM
+}
+
+enum AccountType {
+  CASH
+  ALIPAY_FUND
+  BROKER
+  BANK
+  BANK_WEALTH
+  GOLD
+  OTHER
+}
+
+enum AssetTypeEnum {
+  CASH
+  A_SHARE
+  US_STOCK
+  ETF
+  MUTUAL_FUND
+  BANK_WEALTH
+  GOLD_ACCUMULATION
+  BOND
+  OTHER
+}
+
+enum HoldingStatus {
+  CURRENT
+  CLEARED
+  WATCHLIST
+}
+
+enum TransactionType {
+  BUY
+  SELL
+  DIVIDEND
+  INTEREST
+  DEPOSIT
+  WITHDRAW
+  FEE
+  ADJUSTMENT
+}
+
+enum DataSource {
+  MANUAL
+  MARKET_API
+  IMPORT
+  SEED
+}
+
+enum ImportSourcePlatform {
+  ALIPAY
+  BROKER
+  BANK
+  OTHER
+}
+
+enum ImportSaveMode {
+  HOLDING_SNAPSHOT
+  TRANSACTION_RECORD
+}
+
+enum ImportSessionStatus {
+  UPLOADED
+  RECOGNIZING
+  REVIEWING
+  SAVED
+  FAILED
+}
+
+enum RecognitionRowStatus {
+  NORMAL
+  LOW_CONFIDENCE
+  MISSING_FIELDS
+  DUPLICATE
+  IGNORED
+  CONFIRMED
+}
+
+enum BriefStatus {
+  GENERATING
+  GENERATED
+  FAILED
+  PUSHED
+}
+
+enum PortfolioSnapshotScope {
+  HOUSEHOLD
+  MEMBER
+  ACCOUNT
+  HOLDING
+}
+
+enum RiskPreference {
+  CONSERVATIVE
+  STABLE
+  BALANCED
+  GROWTH
+  AGGRESSIVE
+}
+
+enum InvestmentHorizon {
+  SHORT
+  MEDIUM
+  LONG
+  VERY_LONG
+}
+
+enum AdviceStyle {
+  CONSERVATIVE
+  BALANCED
+  POSITIVE_WITH_CONDITIONS
+  ACTIVE_WITH_TRIGGERS
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  phone     String?
+  name      String
+  avatarUrl String?
+  role      UserRole @default(MEMBER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Household {
+  id             String         @id @default(cuid())
+  name           String
+  baseCurrency   String         @default("CNY")
+  permissionMode PermissionMode @default(ALL_VISIBLE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  members        Member[]
+}
+
+model Member {
+  id          String  @id @default(cuid())
+  householdId String
+  userId      String?
+  name        String
+  displayName String?
+  roleLabel   String?
+  avatarUrl   String?
+  isAdmin     Boolean @default(false)
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  household       Household       @relation(fields: [householdId], references: [id])
+  accounts        Account[]
+  holdings        Holding[]
+  transactions    Transaction[]
+  investorProfile InvestorProfile?
+}
+
+model Account {
+  id             String      @id @default(cuid())
+  householdId    String
+  memberId       String
+  name           String
+  type           AccountType
+  platform       String?
+  currency       String      @default("CNY")
+  includeInTotal Boolean     @default(true)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  member         Member      @relation(fields: [memberId], references: [id])
+  holdings       Holding[]
+  transactions   Transaction[]
+}
+
+model Asset {
+  id        String       @id @default(cuid())
+  name      String
+  code      String?
+  symbol    String?
+  type      AssetTypeEnum
+  market    String?
+  currency  String       @default("CNY")
+  industry  String?
+  issuer    String?
+  riskLevel String?
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  holdings        Holding[]
+  transactions    Transaction[]
+  priceSnapshots  PriceSnapshot[]
+  @@unique([type, market, code])
+}
+
+model Holding {
+  id                 String        @id @default(cuid())
+  householdId        String
+  memberId           String
+  accountId          String
+  assetId            String
+  status             HoldingStatus @default(CURRENT)
+  quantity           Decimal       @default(0)
+  averageCost        Decimal       @default(0)
+  remainingCost      Decimal       @default(0)
+  currentPrice       Decimal       @default(0)
+  currentMarketValue Decimal       @default(0)
+  holdingReturn      Decimal       @default(0)
+  realizedReturn     Decimal       @default(0)
+  cumulativeReturn   Decimal       @default(0)
+  latestPriceDate    DateTime?
+  openedAt           DateTime?
+  clearedAt          DateTime?
+  note               String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  member       Member        @relation(fields: [memberId], references: [id])
+  account      Account       @relation(fields: [accountId], references: [id])
+  asset        Asset         @relation(fields: [assetId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id             String          @id @default(cuid())
+  householdId    String
+  memberId       String
+  accountId      String
+  assetId        String?
+  holdingId      String?
+  type           TransactionType
+  tradeDate      DateTime
+  quantity       Decimal?
+  price          Decimal?
+  grossAmount    Decimal         @default(0)
+  fee            Decimal         @default(0)
+  tax            Decimal         @default(0)
+  netAmount      Decimal         @default(0)
+  currency       String          @default("CNY")
+  realizedReturn Decimal?
+  cashImpact     Decimal?
+  note           String?
+  source         DataSource      @default(MANUAL)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  member  Member  @relation(fields: [memberId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+  asset   Asset?  @relation(fields: [assetId], references: [id])
+  holding Holding? @relation(fields: [holdingId], references: [id])
+}
+
+model PriceSnapshot {
+  id        String     @id @default(cuid())
+  assetId   String
+  date      DateTime
+  price     Decimal
+  currency  String     @default("CNY")
+  source    DataSource @default(MANUAL)
+  createdAt DateTime   @default(now())
+  asset     Asset      @relation(fields: [assetId], references: [id])
+  @@unique([assetId, date])
+}
+
+model PortfolioSnapshot {
+  id                 String                 @id @default(cuid())
+  householdId        String
+  scopeType          PortfolioSnapshotScope
+  scopeId            String?
+  date               DateTime
+  totalAssets        Decimal                @default(0)
+  cashBalance        Decimal                @default(0)
+  holdingMarketValue Decimal                @default(0)
+  dailyReturn        Decimal                @default(0)
+  cumulativeReturn   Decimal                @default(0)
+  holdingReturn      Decimal                @default(0)
+  realizedReturn     Decimal                @default(0)
+  externalNetFlow    Decimal                @default(0)
+  currency           String                 @default("CNY")
+  createdAt          DateTime               @default(now())
+}
+
+model InvestorProfile {
+  id                       String           @id @default(cuid())
+  memberId                 String           @unique
+  riskPreference           RiskPreference   @default(BALANCED)
+  investmentHorizon        InvestmentHorizon @default(LONG)
+  primaryGoal              String?
+  maxSingleAssetWeight     Decimal          @default(30)
+  maxIndustryWeight        Decimal          @default(40)
+  minCashReserveMonths     Int              @default(3)
+  preferredAssets          Json             @default("[]")
+  avoidedAssetsOrBehaviors Json             @default("[]")
+  tradingFrequencyPreference String?
+  drawdownTolerance        String?
+  adviceStyle              AdviceStyle      @default(BALANCED)
+  customPhilosophyText     String?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  member Member @relation(fields: [memberId], references: [id])
+}
+
+model ImportSession {
+  id                 String               @id @default(cuid())
+  householdId        String
+  memberId           String?
+  sourcePlatform     ImportSourcePlatform
+  saveMode           ImportSaveMode
+  status             ImportSessionStatus  @default(UPLOADED)
+  originalFileName   String?
+  fileUrl            String?
+  recognizedRowCount Int                  @default(0)
+  savedRowCount      Int                  @default(0)
+  ignoredRowCount    Int                  @default(0)
+  lowConfidenceCount Int                  @default(0)
+  missingFieldCount  Int                  @default(0)
+  duplicateCount     Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  recognizedRows RecognizedImportRow[]
+}
+
+model RecognizedImportRow {
+  id                String               @id @default(cuid())
+  importSessionId   String
+  sourcePlatform    ImportSourcePlatform
+  memberId          String?
+  accountId         String?
+  assetName         String
+  assetCode         String?
+  assetType         String
+  currency          String               @default("CNY")
+  quantity          Decimal?
+  price             Decimal?
+  marketValue       Decimal?
+  cost              Decimal?
+  holdingReturn     Decimal?
+  holdingReturnRate Decimal?
+  dataDate          DateTime?
+  confidence        Int                  @default(0)
+  status            RecognitionRowStatus @default(NORMAL)
+  rawText           String?
+  note              String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  session ImportSession @relation(fields: [importSessionId], references: [id])
+}
+
+model DailyBrief {
+  id              String      @id @default(cuid())
+  householdId     String
+  date            DateTime
+  status          BriefStatus @default(GENERATING)
+  generatedAt     DateTime?
+  title           String?
+  summary         String?
+  householdImpact Json        @default("{}")
+  marketOverview  Json        @default("[]")
+  memberImpacts   Json        @default("[]")
+  riskAlerts      Json        @default("[]")
+  adviceCards     Json        @default("[]")
+  newsItems       Json        @default("[]")
+  pushStatus      Json        @default("{}")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@unique([householdId, date])
+}
+
+model AppSettings {
+  id                  String   @id @default(cuid())
+  householdId         String   @unique
+  appearance          Json     @default("{}")
+  returnMethod        Json     @default("{}")
+  pushSettings        Json     @default("{}")
+  dataSourceSettings  Json     @default("[]")
+  scheduledJobSettings Json    @default("[]")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

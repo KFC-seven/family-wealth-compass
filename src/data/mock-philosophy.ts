@@ -1,0 +1,43 @@
+import { InvestorPhilosophy } from "@/types/finance";
+
+export const mockPhilosophies: InvestorPhilosophy[] = [
+  {
+    memberId: "member-1",
+    riskPreference: "中等偏进取",
+    investmentHorizon: "长期（5年以上）",
+    mainGoal: "资产稳健增值，跑赢通胀",
+    maxSingleAssetRatio: 0.3,
+    maxSingleIndustryRatio: 0.4,
+    cashReserveRequirement: 0.1,
+    preferredAssets: ["A股核心资产", "优质基金", "理财产品"],
+    avoidBehaviors: ["频繁交易", "追涨杀跌", "杠杆操作"],
+    tradingFrequency: "低频（季度调仓）",
+    aiAdviceStyle: "偏向数据支撑的长期建议",
+  },
+  {
+    memberId: "member-2",
+    riskPreference: "保守偏稳健",
+    investmentHorizon: "中长期（3-5年）",
+    mainGoal: "保值为主，适度增值",
+    maxSingleAssetRatio: 0.25,
+    maxSingleIndustryRatio: 0.3,
+    cashReserveRequirement: 0.15,
+    preferredAssets: ["银行理财", "黄金", "债券基金"],
+    avoidBehaviors: ["高风险投机", "单一资产重仓", "不熟悉领域投资"],
+    tradingFrequency: "极低频（半年至一年调仓）",
+    aiAdviceStyle: "侧重风险提示的保守建议",
+  },
+  {
+    memberId: "member-3",
+    riskPreference: "进取型",
+    investmentHorizon: "中长期（3-5年）",
+    mainGoal: "积累投资经验，获取超额收益",
+    maxSingleAssetRatio: 0.35,
+    maxSingleIndustryRatio: 0.5,
+    cashReserveRequirement: 0.05,
+    preferredAssets: ["指数基金", "成长型基金", "科技股"],
+    avoidBehaviors: ["盲目跟风", "过度集中"],
+    tradingFrequency: "中频（月度评估）",
+    aiAdviceStyle: "兼顾成长和风险的教育型建议",
+  },
+];

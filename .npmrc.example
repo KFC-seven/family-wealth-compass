@@ -1,0 +1,7 @@
+# Example: mainland China npm registry mirror
+# Uncomment to use during npm install
+# registry=https://registry.npmmirror.com
+
+# Example: Prisma engine binary mirror for mainland China
+# Uncomment if Prisma download is slow during npm install
+# PRISMA_ENGINES_MIRROR=https://cdn.npmmirror.com/binaries/prisma
