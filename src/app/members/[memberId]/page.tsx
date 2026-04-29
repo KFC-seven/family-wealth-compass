@@ -12,13 +12,10 @@ import { ChartCard } from "@/components/charts/ChartCard";
 import { AssetAllocationChart } from "@/components/charts/AssetAllocationChart";
 import { MemberReturnTrendChart } from "@/components/charts/MemberReturnTrendChart";
 import { MemberAssetTrendChart } from "@/components/charts/MemberAssetTrendChart";
-import { mockMembers } from "@/data/mock-members";
-import { mockHoldings } from "@/data/mock-holdings";
+import { getMemberById, getHousehold } from "@/lib/data-source";
 import { mockTransactions } from "@/data/mock-transactions";
-import { mockHousehold, mockAssetAllocation } from "@/data/mock-household";
 import { mockPhilosophies } from "@/data/mock-philosophy";
 import { memberDailyReturnsMap, memberMonthlyAssetsMap } from "@/data/mock-member-trends";
-import { calculateMemberSummary, calculateAccountSummary } from "@/lib/returns";
 import { AssetAllocation, AssetType } from "@/types/finance";
 
 interface Props {
@@ -27,25 +24,38 @@ interface Props {
 
 export default async function MemberDetailPage({ params }: Props) {
   const { memberId } = await params;
-  const member = mockMembers.find((m) => m.id === memberId);
+  const [data, { household }] = await Promise.all([
+    getMemberById(memberId),
+    getHousehold(),
+  ]);
+
+  const { member, currentHoldings, clearedHoldings } = data;
   if (!member) notFound();
 
-  const memberHoldings = mockHoldings.filter((h) => h.memberId === memberId);
-  const currentHoldings = memberHoldings.filter((h) => !h.isCleared);
-  const clearedHoldings = memberHoldings.filter((h) => h.isCleared);
   const memberTransactions = mockTransactions
     .filter((t) => t.memberId === memberId)
     .sort((a, b) => b.date.localeCompare(a.date));
   const philosophy = mockPhilosophies.find((p) => p.memberId === memberId);
-  const summary = calculateMemberSummary(memberHoldings, member.cashBalance);
   const dailyReturns = memberDailyReturnsMap[memberId] || [];
   const monthlyAssets = memberMonthlyAssetsMap[memberId] || [];
 
-  // Build account summaries with ids
-  const accountSummaries = member.accounts.map((acc) => {
-    const accHoldings = currentHoldings.filter((h) => h.accountId === acc.id);
-    const summary = calculateAccountSummary(accHoldings, acc.cashBalance);
-    return { id: acc.id, name: acc.name, platform: acc.platform, cashBalance: acc.cashBalance, ...summary };
+  // Build account summaries
+  const accountSummaries = member.accounts.map((acc, i) => {
+    const accHoldings = currentHoldings.filter((h) => h.accountId === member.accounts[i]?.id);
+    const accHoldingReturn = accHoldings.reduce((s, h) => s + h.holdingReturn, 0);
+    const accRealizedReturn = accHoldings.reduce((s, h) => s + h.realizedReturn, 0);
+    const accCumulativeReturn = accHoldings.reduce((s, h) => s + h.cumulativeReturn, 0);
+    return {
+      id: acc.id,
+      name: acc.name,
+      platform: acc.platform,
+      cashBalance: 0,
+      totalValue: accHoldings.reduce((s, h) => s + h.marketValue, 0),
+      holdingReturn: accHoldingReturn,
+      realizedReturn: accRealizedReturn,
+      cumulativeReturn: accCumulativeReturn,
+      holdingCount: accHoldings.length,
+    };
   });
 
   // Build member-level asset allocation
@@ -59,7 +69,7 @@ export default async function MemberDetailPage({ params }: Props) {
     .map(([type, value]) => ({
       type: type as AssetType,
       value,
-      percentage: summary.totalAssets > 0 ? value / summary.totalAssets : 0,
+      percentage: member.totalAssets > 0 ? value / member.totalAssets : 0,
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -74,13 +84,13 @@ export default async function MemberDetailPage({ params }: Props) {
 
       <MemberSummaryCard
         name={member.name}
-        totalAssets={summary.totalAssets}
-        householdTotal={mockHousehold.totalAssets}
+        totalAssets={member.totalAssets}
+        householdTotal={household.totalAssets}
         todayReturn={dailyReturns.length > 0 ? dailyReturns[dailyReturns.length - 1].value : undefined}
-        holdingReturn={summary.holdingReturn}
+        holdingReturn={member.holdingReturn}
         holdingReturnRate={member.cumulativeReturnRate}
-        realizedReturn={summary.realizedReturn}
-        cumulativeReturn={summary.cumulativeReturn}
+        realizedReturn={member.realizedReturn}
+        cumulativeReturn={member.cumulativeReturn}
         cumulativeReturnRate={member.cumulativeReturnRate}
         cashBalance={member.cashBalance}
       />

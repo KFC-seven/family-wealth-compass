@@ -13,6 +13,7 @@ npm run db:push        # 推送 schema 到数据库
 npm run db:migrate     # 创建迁移
 npm run db:seed        # 填充种子数据
 npm run db:studio      # Prisma Studio
+npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
 ```
 
 ## 技术栈
@@ -93,7 +94,15 @@ RecognizedImportRow, DailyBrief, AppSettings
 - [x] 6个阶段全部完成
 - [x] 前端8个页面 + 下钻图表 + 模拟OCR + 投资简报 + 设置
 - [x] 后端Prisma schema + 种子数据 + 13个API路由 + 5份文档
-- [ ] 前端mock→API切换 (可通过NEXT_PUBLIC_USE_API开启)
+- [x] 前端mock→API切换 (可通过NEXT_PUBLIC_USE_API开启，7个核心页面已接入)
+  - [x] 首页 Dashboard → API (趋势/风险保留mock fallback)
+  - [x] 成员列表 → API
+  - [x] 成员详情 → API (趋势/交易保留mock fallback)
+  - [x] 持仓列表 → API
+  - [x] 单仓详情 → API (价格/新闻保留mock fallback)
+  - [x] 每日简报 → API (有mock fallback)
+  - [ ] 设置页 → 部分API (主要为mock)
+  - [ ] 导入页 → 保留mock OCR
 - [ ] 真实OCR/AI/行情/推送/认证
 
 ## 约定

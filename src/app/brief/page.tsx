@@ -12,10 +12,11 @@ import { BriefRiskAlertCard } from "@/components/brief/BriefRiskAlertCard";
 import { AdviceCard } from "@/components/brief/AdviceCard";
 import { WeChatPushStatusCard } from "@/components/brief/WeChatPushStatusCard";
 import { BriefHistoryList } from "@/components/brief/BriefHistoryList";
-import { mockBrief, mockBriefHistory } from "@/data/mock-brief";
+import { mockBriefHistory } from "@/data/mock-brief";
+import { useBrief } from "@/lib/use-data-source";
 
 export default function BriefPage() {
-  const [brief] = useState(mockBrief);
+  const { brief } = useBrief();
   const [activeDate, setActiveDate] = useState(brief.date);
 
   const totalMemberImpacts = brief.memberImpacts.reduce((s, m) => s + m.affectedHoldingCount, 0);

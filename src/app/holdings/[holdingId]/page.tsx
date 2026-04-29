@@ -10,10 +10,8 @@ import { PositionReturnBreakdown } from "@/components/position/PositionReturnBre
 import { PositionNewsCard } from "@/components/position/PositionNewsCard";
 import { PositionAdviceCard } from "@/components/position/PositionAdviceCard";
 import { AssetTrendChart } from "@/components/charts/AssetTrendChart";
-import { mockHoldings } from "@/data/mock-holdings";
+import { getHoldingsData, getHousehold, getHoldingTransactions } from "@/lib/data-source";
 import { mockTransactions } from "@/data/mock-transactions";
-import { mockMembers } from "@/data/mock-members";
-import { mockHousehold } from "@/data/mock-household";
 import { mockPriceHistory } from "@/data/mock-price-history";
 import { mockPositionNews } from "@/data/mock-news";
 import { mockPositionAdvice } from "@/data/mock-news";
@@ -25,18 +23,27 @@ interface Props {
 
 export default async function PositionDetailPage({ params }: Props) {
   const { holdingId } = await params;
-  const holding = mockHoldings.find((h) => h.id === holdingId);
+
+  const [holdingsData, { household }] = await Promise.all([
+    getHoldingsData(),
+    getHousehold(),
+  ]);
+
+  const allHoldings = [...holdingsData.currentHoldings, ...holdingsData.clearedHoldings];
+  const holding = allHoldings.find((h) => h.id === holdingId);
   if (!holding) notFound();
 
-  const member = mockMembers.find((m) => m.id === holding.memberId);
-  const priceData = mockPriceHistory[holdingId];
-  const memberHoldings = mockHoldings.filter((h) => h.memberId === holding.memberId && !h.isCleared);
+  const member = holdingsData.members.find((m) => m.id === holding.memberId);
+  const memberHoldings = holdingsData.currentHoldings.filter((h) => h.memberId === holding.memberId);
   const memberTotalValue = memberHoldings.reduce((s, h) => s + h.marketValue, 0) + (member?.cashBalance || 0);
   const memberWeight = memberTotalValue > 0 ? holding.marketValue / memberTotalValue : 0;
-  const householdWeight = mockHousehold.totalAssets > 0 ? holding.marketValue / mockHousehold.totalAssets : 0;
+  const householdWeight = household.totalAssets > 0 ? holding.marketValue / household.totalAssets : 0;
+
+  const priceData = mockPriceHistory[holdingId];
+  const heldAssetId = holding.assetId;
 
   const positionTransactions = mockTransactions
-    .filter((t) => t.memberId === holding.memberId && t.assetId === holding.assetId)
+    .filter((t) => t.memberId === holding.memberId && t.assetId === heldAssetId)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const dividendsInterest = positionTransactions

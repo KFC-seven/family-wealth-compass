@@ -4,9 +4,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { AssetTypeBadge } from "@/components/financial/GeneralBadges";
 import { AssetDrilldownChart } from "@/components/charts/AssetDrilldownChart";
-import { mockHoldings } from "@/data/mock-holdings";
-import { mockMembers } from "@/data/mock-members";
-import { formatMoney, formatSignedMoney, formatPercent } from "@/lib/format";
+import { getHoldingsData } from "@/lib/data-source";
+import { formatMoney, formatSignedMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
 
@@ -15,17 +14,23 @@ const ASSET_COLORS: Record<string, string> = {
   etf: "#4f46e5", mutualFund: "#7c3aed", bankWealth: "#0891b2", gold: "#d97706",
 };
 
-export default function HoldingsListPage() {
-  const members = mockMembers;
-  const allHoldings = mockHoldings;
+export default async function HoldingsListPage() {
+  const { members, currentHoldings: allCurrent, clearedHoldings: allCleared } = await getHoldingsData();
+
+  // Build cleared lookup by member
+  const clearedByMember: Record<string, typeof allCleared> = {};
+  for (const h of allCleared) {
+    if (!clearedByMember[h.memberId]) clearedByMember[h.memberId] = [];
+    clearedByMember[h.memberId].push(h);
+  }
 
   return (
     <div className="space-y-8 animate-in">
       <PageHeader title="持仓" subtitle="按成员分组" />
 
       {members.map((member) => {
-        const currentHoldings = allHoldings.filter((h) => h.memberId === member.id && !h.isCleared);
-        const clearedHoldings = allHoldings.filter((h) => h.memberId === member.id && h.isCleared);
+        const currentHoldings = allCurrent.filter((h) => h.memberId === member.id);
+        const clearedHoldings = clearedByMember[member.id] || [];
         if (currentHoldings.length === 0 && clearedHoldings.length === 0) return null;
 
         // Compute drilldown data for this member

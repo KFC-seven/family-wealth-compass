@@ -2,23 +2,23 @@ import Link from "next/link";
 import { ChevronRight, User } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockMembers } from "@/data/mock-members";
-import { mockHoldings } from "@/data/mock-holdings";
-import { mockHousehold } from "@/data/mock-household";
-import { formatMoney, formatSignedMoney, formatPercent } from "@/lib/format";
-import { calculateMemberSummary } from "@/lib/returns";
+import { getMembersData, getHousehold } from "@/lib/data-source";
+import { formatMoney, formatSignedMoney } from "@/lib/format";
 
-export default function MembersListPage() {
+export default async function MembersListPage() {
+  const [members, { household }] = await Promise.all([
+    getMembersData(),
+    getHousehold(),
+  ]);
+
   return (
     <div className="space-y-6 animate-in">
-      <PageHeader title="成员" subtitle={`${mockMembers.length} 个家庭成员`} />
+      <PageHeader title="成员" subtitle={`${members.length} 个家庭成员`} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {mockMembers.map((member) => {
-          const memberHoldings = mockHoldings.filter((h) => h.memberId === member.id);
-          const summary = calculateMemberSummary(memberHoldings, member.cashBalance);
-          const ratio = mockHousehold.totalAssets > 0
-            ? (summary.totalAssets / mockHousehold.totalAssets) * 100 : 0;
+        {members.map((member) => {
+          const ratio = household.totalAssets > 0
+            ? (member.totalAssets / household.totalAssets) * 100 : 0;
 
           return (
             <Link key={member.id} href={`/members/${member.id}`}>
@@ -36,20 +36,20 @@ export default function MembersListPage() {
                   </div>
 
                   <div>
-                    <p className="text-2xl font-bold tabular-nums">{formatMoney(summary.totalAssets)}</p>
+                    <p className="text-2xl font-bold tabular-nums">{formatMoney(member.totalAssets)}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground">累计收益</p>
-                      <p className={`font-medium tabular-nums ${summary.cumulativeReturn >= 0 ? "text-positive" : "text-negative"}`}>
-                        {formatSignedMoney(summary.cumulativeReturn)}
+                      <p className={`font-medium tabular-nums ${member.cumulativeReturn >= 0 ? "text-positive" : "text-negative"}`}>
+                        {formatSignedMoney(member.cumulativeReturn)}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">持仓收益</p>
-                      <p className={`font-medium tabular-nums ${summary.holdingReturn >= 0 ? "text-positive" : "text-negative"}`}>
-                        {formatSignedMoney(summary.holdingReturn)}
+                      <p className={`font-medium tabular-nums ${member.holdingReturn >= 0 ? "text-positive" : "text-negative"}`}>
+                        {formatSignedMoney(member.holdingReturn)}
                       </p>
                     </div>
                   </div>
@@ -57,7 +57,7 @@ export default function MembersListPage() {
                   <div className="flex gap-2 text-xs text-muted-foreground pt-2 border-t border-border">
                     <span>{member.accounts.length} 个账户</span>
                     <span>·</span>
-                    <span>{memberHoldings.filter((h) => !h.isCleared).length} 个持仓</span>
+                    <span>{member.holdings.filter((h) => !h.isCleared).length} 个持仓</span>
                   </div>
                 </CardContent>
               </Card>

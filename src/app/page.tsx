@@ -8,18 +8,8 @@ import { AssetTrendChart } from "@/components/charts/AssetTrendChart";
 import { HoldingRankList } from "@/components/financial/HoldingRankList";
 import { RiskAlertCard } from "@/components/financial/RiskAlertCard";
 import { DailyBriefPreviewCard } from "@/components/financial/DailyBriefPreviewCard";
-import {
-  mockHousehold,
-  mockDailyReturns,
-  mockMonthlyAssets,
-  mockMemberAllocation,
-  mockRiskAlerts,
-  mockDailyBrief,
-  mockTopGainers,
-  mockTopLosers,
-} from "@/data/mock-household";
 import { CashBalanceCard } from "@/components/financial/CashBalanceCard";
-import { mockHoldings } from "@/data/mock-holdings";
+import { getHousehold } from "@/lib/data-source";
 import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
 
 const ASSET_COLORS: Record<string, string> = {
@@ -27,11 +17,24 @@ const ASSET_COLORS: Record<string, string> = {
   etf: "#4f46e5", mutualFund: "#7c3aed", bankWealth: "#0891b2", gold: "#d97706",
 };
 
-export default function Home() {
-  const household = mockHousehold;
+export default async function Home() {
+  const {
+    household,
+    dailyReturns,
+    monthlyAssets,
+    memberAllocation,
+    riskAlerts,
+    topGainers,
+    topLosers,
+    briefPreview,
+  } = await getHousehold();
 
-  // Compute household-level drilldown data
-  const currentHoldings = mockHoldings.filter((h) => !h.isCleared);
+  // Compute household-level drilldown data from asset allocation
+  const assetAllocationData = household.members.length > 0
+    ? memberAllocation
+    : [];
+
+  const currentHoldings = household.members.flatMap((m) => m.holdings.filter((h) => !h.isCleared));
   const typeMap: Record<string, { name: string; value: number }[]> = {};
   currentHoldings.forEach((h) => {
     if (!typeMap[h.assetType]) typeMap[h.assetType] = [];
@@ -80,7 +83,7 @@ export default function Home() {
 
       {/* Daily Brief & Cash */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <DailyBriefPreviewCard brief={mockDailyBrief} />
+        <DailyBriefPreviewCard brief={briefPreview} />
         <CashBalanceCard cashBalance={household.cashBalance} totalAssets={household.totalAssets} />
       </div>
 
@@ -90,33 +93,33 @@ export default function Home() {
           <AssetDrilldownChart typeLevel={householdTypeLevel} holdingLevel={householdHoldingLevel} />
         </ChartCard>
         <ChartCard title="成员资产占比">
-          <MemberAllocationChart data={mockMemberAllocation} />
+          <MemberAllocationChart data={memberAllocation} />
         </ChartCard>
       </div>
 
       {/* Trend Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <ChartCard title="近30天收益趋势" subtitle="每日收益变化">
-          <ReturnTrendChart data={mockDailyReturns} />
+          <ReturnTrendChart data={dailyReturns} />
         </ChartCard>
         <ChartCard title="近12个月资产变化" subtitle="月度总资产走势">
-          <AssetTrendChart data={mockMonthlyAssets} />
+          <AssetTrendChart data={monthlyAssets} />
         </ChartCard>
       </div>
 
       {/* Rankings */}
       <div className="grid gap-4 md:grid-cols-2">
         <ChartCard title="盈利排行" subtitle="累计收益 TOP 5">
-          <HoldingRankList data={mockTopGainers} type="gain" />
+          <HoldingRankList data={topGainers} type="gain" />
         </ChartCard>
         <ChartCard title="亏损排行" subtitle="累计亏损 TOP 3">
-          <HoldingRankList data={mockTopLosers} type="loss" />
+          <HoldingRankList data={topLosers} type="loss" />
         </ChartCard>
       </div>
 
       {/* Risk Alerts */}
       <ChartCard title="风险提醒" subtitle="需要关注的持仓和配置问题">
-        <RiskAlertCard alerts={mockRiskAlerts} />
+        <RiskAlertCard alerts={riskAlerts} />
       </ChartCard>
     </div>
   );
