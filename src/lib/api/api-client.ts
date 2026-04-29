@@ -142,4 +142,65 @@ export const api = {
       "/market-data/sources/check",
       { method: "POST" },
     ),
+
+  // Phase 10: Import
+  createImportSession: (data: { sourcePlatform: string; saveMode: string; householdId: string; memberId?: string }) =>
+    request<{ id: string }>("/import-sessions", { method: "POST", body: JSON.stringify(data) }),
+
+  uploadImportFile: async (sessionId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/import-sessions/${sessionId}/upload`, {
+      method: "POST",
+      body: form,
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error?.message ?? "Upload failed");
+    return json.data as { fileName: string; mimeType: string; sizeBytes: number };
+  },
+
+  recognizeImport: (sessionId: string) =>
+    request<{ provider: string; rowCount: number; confidence: number; durationMs: number }>(
+      `/import-sessions/${sessionId}/recognize`,
+      { method: "POST" },
+    ),
+
+  getImportSession: (sessionId: string) =>
+    request<{
+      id: string; sourcePlatform: string; saveMode: string; status: string;
+      originalFileName: string | null; recognizedRowCount: number;
+      savedRowCount: number; ignoredRowCount: number;
+      lowConfidenceCount: number; missingFieldCount: number; duplicateCount: number;
+      savedAt: string | null; errorMessage: string | null;
+      rows: Array<{
+        id: string; rowIndex: number | null; memberId: string | null; accountId: string | null;
+        assetName: string; assetCode: string | null; assetType: string; currency: string;
+        quantity: string | null; price: string | null; marketValue: string | null;
+        cost: string | null; holdingReturn: string | null; confidence: number;
+        status: string; validationIssues: unknown; action: string | null; note: string | null;
+      }>;
+    }>(`/import-sessions/${sessionId}`),
+
+  updateImportRow: (sessionId: string, rowId: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/import-sessions/${sessionId}/rows/${rowId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  addImportRow: (sessionId: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/import-sessions/${sessionId}/rows`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  deleteImportRow: (sessionId: string, rowId: string) =>
+    request<{ deleted: boolean }>(`/import-sessions/${sessionId}/rows/${rowId}`, {
+      method: "DELETE",
+    }),
+
+  confirmImport: (sessionId: string, data: { saveMode: string; defaultTransactionType?: string }) =>
+    request<{ savedCount: number; ignoreCount: number; totalRows: number }>(
+      `/import-sessions/${sessionId}/confirm`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
 };

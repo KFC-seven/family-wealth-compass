@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。6个阶段全部完成。
+家庭财富投资管理 Web 应用。10个阶段全部完成。
 
 ## 运行命令
 
@@ -69,7 +69,7 @@ scripts/
 docs/
   design/                       # Apple-inspired 设计文档
   product/                      # PRD + 前端验收清单
-  architecture/                 # 8份: 架构/模型/API/启动/部署/定时任务/数据源/故障排查
+  architecture/                 # 10份: 架构/模型/API/启动/部署/定时任务/数据源/故障排查/上传/OCR
 ```
 
 ## 前端页面
@@ -85,12 +85,18 @@ docs/
 | `/brief` | 每日简报 (市场/成员/新闻/风险/建议/推送) | 静态 |
 | `/settings` | 设置 (10个分组) | 静态 |
 
-## API (18个)
+## API (24个)
 
 `/api/health`, `/api/portfolio/household-summary`,
 `/api/members`, `/api/members/[id]`, `/api/members/[id]/summary`,
 `/api/holdings`, `/api/holdings/[id]`, `/api/holdings/[id]/transactions`,
 `/api/transactions` (GET+POST), `/api/import-sessions` (GET+POST),
+`/api/import-sessions/[id]` (GET),
+`/api/import-sessions/[id]/upload` (POST),
+`/api/import-sessions/[id]/recognize` (POST),
+`/api/import-sessions/[id]/rows` (POST),
+`/api/import-sessions/[id]/rows/[rowId]` (PATCH+DELETE),
+`/api/import-sessions/[id]/confirm` (POST),
 `/api/daily-brief` (GET), `/api/settings` (GET+POST),
 `/api/jobs` (GET), `/api/jobs/runs` (GET), `/api/jobs/run` (POST),
 `/api/market-data/sources` (GET), `/api/market-data/sources/check` (POST)
@@ -153,7 +159,15 @@ RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSo
   - [x] api:smoke 覆盖 10 个端点
   - [x] seed 日期适配当前时间
   - [x] PostgreSQL 故障排查文档
-- [ ] 真实OCR/AI/推送/认证
+  - [x] 全链路验证: api:smoke 10/10 通过, job:daily-valuation SUCCESS
+- [x] 真实截图上传 + OCR 接入 (Phase 10)
+  - [x] 文件存储抽象层 (LocalStorageProvider + Aliyun OSS 骨架)
+  - [x] OCR provider 抽象层 (MockOcrProvider + Aliyun OCR 骨架)
+  - [x] Import API 完整链路 (upload → recognize → edit → confirm)
+  - [x] 导入页 mock→API 驱动 (保留 mock fallback)
+  - [x] HOLDING_SNAPSHOT + TRANSACTION_RECORD 保存
+  - [x] 文件校验 (大小/MIME/扩展名/hash) + OCR 标准化
+- [ ] 真实AI/推送/认证
 
 ## 约定
 

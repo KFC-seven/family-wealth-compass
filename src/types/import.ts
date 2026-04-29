@@ -58,7 +58,7 @@ export interface ImportSession {
   id: string;
   source: ImportSource | null;
   screenshotUrl: string | null;
-  status: "selecting" | "preview" | "recognizing" | "review" | "editing" | "summary" | "saving" | "done";
+  status: "selecting" | "uploaded" | "preview" | "recognizing" | "review" | "editing" | "summary" | "saving" | "done";
   rows: RecognizedAssetRow[];
   validationIssues: ImportValidationIssue[];
   saveMode: ImportSaveMode;

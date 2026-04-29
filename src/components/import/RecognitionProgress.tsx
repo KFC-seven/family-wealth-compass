@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface RecognitionProgressProps {
-  status: "idle" | "recognizing" | "done" | "error";
+  status: "idle" | "uploading" | "recognizing" | "done" | "error";
 }
 
 export function RecognitionProgress({ status }: RecognitionProgressProps) {
@@ -13,6 +13,12 @@ export function RecognitionProgress({ status }: RecognitionProgressProps) {
   return (
     <Card>
       <CardContent className="p-5">
+        {status === "uploading" && (
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm font-medium">正在上传...</p>
+          </div>
+        )}
         {status === "recognizing" && (
           <div className="space-y-3">
             <div className="flex items-center gap-3">

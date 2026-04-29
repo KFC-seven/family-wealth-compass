@@ -12,3 +12,6 @@ dist/
 .turbo/
 prompt_*.txt
 tmp-*.ts
+
+# Phase 10: uploaded files
+uploads/

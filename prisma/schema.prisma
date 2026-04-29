@@ -353,13 +353,26 @@ model ImportSession {
   saveMode           ImportSaveMode
   status             ImportSessionStatus  @default(UPLOADED)
   originalFileName   String?
+  fileMimeType       String?
+  fileSizeBytes      Int?
+  fileHash           String?
+  storageProvider    String?
+  storageKey         String?
   fileUrl            String?
+  ocrProvider        String?
+  ocrStartedAt       DateTime?
+  ocrFinishedAt      DateTime?
+  ocrDurationMs      Int?
+  ocrRawResult       Json?
+  reviewStatus       String?
   recognizedRowCount Int                  @default(0)
   savedRowCount      Int                  @default(0)
   ignoredRowCount    Int                  @default(0)
   lowConfidenceCount Int                  @default(0)
   missingFieldCount  Int                  @default(0)
   duplicateCount     Int                  @default(0)
+  savedAt            DateTime?
+  errorMessage       String?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   recognizedRows RecognizedImportRow[]
@@ -368,6 +381,7 @@ model ImportSession {
 model RecognizedImportRow {
   id                String               @id @default(cuid())
   importSessionId   String
+  rowIndex          Int?
   sourcePlatform    ImportSourcePlatform
   memberId          String?
   accountId         String?
@@ -385,6 +399,11 @@ model RecognizedImportRow {
   confidence        Int                  @default(0)
   status            RecognitionRowStatus @default(NORMAL)
   rawText           String?
+  normalizedText    String?
+  fieldConfidences  Json?
+  validationIssues  Json?
+  action            String?
+  confirmedAt       DateTime?
   note              String?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
