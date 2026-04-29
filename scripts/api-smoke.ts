@@ -1,9 +1,10 @@
 /**
- * API smoke test — checks key endpoints return 200 with ok:true.
+ * API smoke test — 检查所有端点返回 ok:true。
  *
- * Usage: npx tsx scripts/api-smoke.ts
+ * 用法: npm run api:smoke
+ *        npx tsx scripts/api-smoke.ts
  *
- * Requires the dev server running on http://localhost:3000.
+ * 需要 dev server 在运行 (默认 http://localhost:3000)。
  */
 
 const BASE = process.env.API_BASE || "http://localhost:3000";
@@ -36,7 +37,8 @@ async function check(endpoint: string): Promise<CheckResult> {
 }
 
 async function main() {
-  console.log(`\n  API Smoke Test — ${BASE}\n`);
+  console.log(`\n  🔍 API Smoke Test — ${BASE}\n`);
+  console.log("  注意: 需要 dev server 在运行 (npm run dev)\n");
 
   const endpoints = [
     "/health",
@@ -46,6 +48,10 @@ async function main() {
     "/transactions",
     "/daily-brief",
     "/settings",
+    // Phase 8
+    "/jobs",
+    "/jobs/runs",
+    "/market-data/sources",
   ];
 
   const results = await Promise.all(endpoints.map(check));
@@ -62,7 +68,17 @@ async function main() {
     }
   }
 
-  console.log(`\n  Result: ${passed} passed, ${failed} failed, ${results.length} total\n`);
+  console.log(`\n  ─────────────────────────────────`);
+  console.log(`  Result: ${passed} passed, ${failed} failed, ${results.length} total`);
+  if (failed > 0) {
+    console.log(`\n  建议:`);
+    console.log(`    1. 确保 PostgreSQL 运行: npm run db:up`);
+    console.log(`    2. 确保 seed 已执行:     npm run db:seed`);
+    console.log(`    3. 运行诊断:             npm run db:doctor`);
+    console.log(`    4. 查看容器日志:         npm run db:logs\n`);
+  }
+  console.log("");
+
   process.exit(failed > 0 ? 1 : 0);
 }
 

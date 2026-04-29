@@ -62,6 +62,42 @@ Body: `{ householdId, sourcePlatform, saveMode, ... }`
 Body: `{ appearance?, returnMethod?, pushSettings?, ... }`
 返回：`{ id }`
 
+## Phase 8 新增接口
+
+### GET /api/jobs
+返回：任务配置和最近运行状态列表
+```json
+[{ "id": "...", "name": "update-market-prices", "displayName": "更新行情/净值",
+   "cronExpression": "30 21 * * 1-5", "isEnabled": true,
+   "lastRunAt": "2026-04-29T...", "lastStatus": "SUCCESS" }]
+```
+
+### GET /api/jobs/runs?limit=20
+返回：最近 JobRun 列表
+```json
+[{ "id": "...", "jobName": "run-daily-valuation", "status": "SUCCESS",
+   "startedAt": "...", "finishedAt": "...", "durationMs": 1234,
+   "triggeredBy": "MANUAL", "successCount": 15, "failureCount": 0, "skippedCount": 0 }]
+```
+
+### POST /api/jobs/run
+Body: `{ "jobName": "run-daily-valuation", "date": "2026-04-29" }`
+Headers: `x-job-api-secret` (如果环境变量 JOB_API_SECRET 已设置)
+返回：任务执行结果 `{ status, successCount, failureCount, skippedCount, ... }`
+
+### GET /api/market-data/sources
+返回：数据源状态列表
+```json
+[{ "id": "...", "name": "mock", "displayName": "Mock 数据源",
+   "type": "MOCK", "isEnabled": true, "priority": 10, "lastStatus": "HEALTHY" }]
+```
+
+### POST /api/market-data/sources/check
+返回：所有数据源健康检查结果
+```json
+{ "mock": { "status": "HEALTHY", "checkedAt": "...", "message": "Mock 始终可用" } }
+```
+
 ## 错误码
 
 | code | 说明 | HTTP |

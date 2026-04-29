@@ -101,4 +101,45 @@ export const api = {
       appearance: unknown; returnMethod: unknown;
       pushSettings: unknown; dataSourceSettings: unknown;
     }>("/settings"),
+
+  // Phase 8: Jobs
+  jobs: () =>
+    request<Array<{
+      id: string; name: string; displayName: string; description: string | null;
+      cronExpression: string | null; timezone: string; isEnabled: boolean;
+      lastRunAt: string | null; nextRunAt: string | null; lastStatus: string | null;
+      config: unknown; createdAt: string; updatedAt: string;
+    }>>("/jobs"),
+
+  jobsRuns: (limit?: number) =>
+    request<Array<{
+      id: string; jobId: string | null; jobName: string; status: string;
+      startedAt: string; finishedAt: string | null; durationMs: number | null;
+      triggeredBy: string; successCount: number; failureCount: number;
+      skippedCount: number; errorMessage: string | null; errorDetails: unknown; metadata: unknown;
+    }>>(`/jobs/runs${limit ? `?limit=${limit}` : ""}`),
+
+  runJob: (jobName: string, date?: string) =>
+    request<{
+      status: string; successCount: number; failureCount: number;
+      skippedCount: number; errorMessage?: string; metadata?: unknown;
+    }>("/jobs/run", {
+      method: "POST",
+      body: JSON.stringify({ jobName, date }),
+    }),
+
+  // Phase 8: Market Data Sources
+  marketDataSources: () =>
+    request<Array<{
+      id: string; name: string; displayName: string; type: string;
+      isEnabled: boolean; priority: number; supportedAssetTypes: unknown;
+      config: unknown; lastCheckedAt: string | null; lastStatus: string;
+      hasProvider: boolean; createdAt: string; updatedAt: string;
+    }>>("/market-data/sources"),
+
+  checkMarketDataSources: () =>
+    request<Record<string, { status: string; message?: string; checkedAt: string; latencyMs?: number }>>(
+      "/market-data/sources/check",
+      { method: "POST" },
+    ),
 };
