@@ -28,23 +28,33 @@ interface OcrProvider {
 }
 ```
 
-## MockOcrProvider
+## Provider 状态
+
+| Provider | 状态 | 说明 |
+|----------|------|------|
+| MockOcrProvider | ✅ 完整可用 | 始终可用，根据 sourcePlatform 返回预定义结果 |
+| AliyunOcrProvider | ⚠️ 骨架 | 仅配置检测，**真实阿里云 OCR 调用尚未实现** |
+| TencentOcrProvider | — 未开始 | 预留方向 |
+| PaddleOcrProvider | — 未开始 | 需 Python 环境 |
+
+## MockOcrProvider（当前使用）
 
 - 始终可用，不访问外部网络
 - 根据 sourcePlatform 返回预定义结果：
   - ALIPAY: 2 条基金持仓
   - BROKER: 2 条 A 股持仓
   - BANK/OTHER: 1 条银行理财持仓
-- 用于开发、测试、OCR failback
+- 用于开发、测试、OCR fallback
 
-## 阿里云 OCR 骨架
+## 阿里云 OCR 骨架（未完成）
 
-`AliyunOcrProvider` 已完成配置检测。真实接入需：
+**当前状态：骨架，不可用于真实 OCR。** `AliyunOcrProvider` 仅完成配置检测（`isEnabled` 检查 env）。真实接入需：
 1. 确认 OCR 产品类型（文档识别 / 表格识别 / 通用文字）
 2. 配置 ALIYUN_ACCESS_KEY_ID / ALIYUN_ACCESS_KEY_SECRET / ALIYUN_OCR_ENDPOINT
 3. 设置 OCR_PROVIDER=aliyun, OCR_ENABLED=true
-4. 实现签名和 API 调用
+4. 实现 API 签名和调用
 5. 映射返回结构为 OcrRowResult[]
+6. 生产环境需关注费用和隐私合规
 
 ## OCR 结果标准化
 

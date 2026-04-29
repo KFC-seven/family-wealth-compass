@@ -120,6 +120,9 @@ npm run dev
 # 5. 冒烟测试（另一个终端）
 npm run api:smoke
 
+# 6. 导入链路测试（不需要 dev server）
+npm run import:smoke
+
 # 6. 构建验证
 npm run build
 ```

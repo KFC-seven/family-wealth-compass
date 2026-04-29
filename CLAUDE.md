@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。10个阶段全部完成。
+家庭财富投资管理 Web 应用。10 个阶段完成（Phase 10 本地上传/Mock OCR 可用，阿里云 OSS/OCR 为骨架）。
 
 ## 运行命令
 
@@ -33,6 +33,7 @@ npm run scheduler:start       # 常驻调度器（开发用）
 
 # 测试
 npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
+npm run import:smoke    # 导入链路冒烟测试 (service-level, 不需 dev server)
 ```
 
 ## 技术栈
@@ -50,7 +51,7 @@ npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
 
 ```
 src/
-  app/                          # 前端页面 (8个路由) + API (18个路由)
+  app/                          # 前端页面 (8个路由) + API (24个路由)
   components/                   # 8个分类目录, 60+ 组件
   data/                         # 12个 mock 数据文件
   lib/                          # format, returns, import-validation, api-client
@@ -81,7 +82,7 @@ docs/
 | `/members/[id]` | 成员详情 (持仓/已清仓/交易/理念/趋势) | 动态 |
 | `/holdings` | 持仓列表 (按成员分组+下钻饼图) | 静态 |
 | `/holdings/[id]` | 单仓详情 (买卖点图/收益拆解/交易周期/AI) | 动态 |
-| `/import` | 导入确认 (模拟OCR→编辑→校验→保存) | 静态 |
+| `/import` | 导入确认 (上传/OCR/编辑/校验/保存) | 静态 |
 | `/brief` | 每日简报 (市场/成员/新闻/风险/建议/推送) | 静态 |
 | `/settings` | 设置 (10个分组) | 静态 |
 
@@ -144,7 +145,7 @@ RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSo
   - [x] 单仓详情 → API (价格/新闻保留mock fallback)
   - [x] 每日简报 → API (有mock fallback)
   - [x] 设置页 → 数据源/定时任务/收益口径已接API
-  - [ ] 导入页 → 保留mock OCR
+  - [x] 导入页 → API 驱动上传/OCR，LocalStorage + MockOcrProvider 可用，mock fallback 保留
 - [x] 定时任务框架 + 行情/净值数据源 (Phase 8)
   - [x] CLI 单次执行 + 可选常驻调度器
   - [x] Mock/Manual/Eastmoney/Tushare provider
@@ -161,12 +162,15 @@ RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSo
   - [x] PostgreSQL 故障排查文档
   - [x] 全链路验证: api:smoke 10/10 通过, job:daily-valuation SUCCESS
 - [x] 真实截图上传 + OCR 接入 (Phase 10)
-  - [x] 文件存储抽象层 (LocalStorageProvider + Aliyun OSS 骨架)
-  - [x] OCR provider 抽象层 (MockOcrProvider + Aliyun OCR 骨架)
+  - [x] 本地真实文件上传 (LocalStorageProvider) 
+  - [x] Mock OCR 完整可用 (MockOcrProvider)
   - [x] Import API 完整链路 (upload → recognize → edit → confirm)
-  - [x] 导入页 mock→API 驱动 (保留 mock fallback)
-  - [x] HOLDING_SNAPSHOT + TRANSACTION_RECORD 保存
-  - [x] 文件校验 (大小/MIME/扩展名/hash) + OCR 标准化
+  - [x] 导入页 API 驱动 (保留 mock fallback)
+  - [x] HOLDING_SNAPSHOT 保存完整可用
+  - [x] TRANSACTION_RECORD 基础结构 (待完善 cashImpact/realizedReturn)
+  - [x] 文件校验 (大小/MIME/扩展名/hash)
+  - [ ] 阿里云 OSS 真实上传 (骨架已预留)
+  - [ ] 阿里云 OCR 真实调用 (骨架已预留)
 - [ ] 真实AI/推送/认证
 
 ## 约定

@@ -52,6 +52,37 @@ Body: `{ householdId, memberId, accountId, type, tradeDate, grossAmount, ... }`
 Body: `{ householdId, sourcePlatform, saveMode, ... }`
 返回：`{ id }`
 
+## Phase 10 新增接口
+
+### GET /api/import-sessions/[sessionId]
+返回：会话详情 + recognizedRows
+
+### POST /api/import-sessions/[sessionId]/upload
+Content-Type: multipart/form-data, 字段名 `file`
+要求：UPLOAD_ENABLED=true, x-upload-api-secret (如配置)
+返回：`{ fileName, mimeType, sizeBytes }`
+
+### POST /api/import-sessions/[sessionId]/recognize
+触发 OCR 识别，写入 RecognizedImportRow
+返回：`{ provider, rowCount, confidence, durationMs }`
+
+### POST /api/import-sessions/[sessionId]/rows
+手动新增一行
+Body: `{ assetName, assetType, ... }`
+返回：`{ id }`
+
+### PATCH /api/import-sessions/[sessionId]/rows/[rowId]
+更新识别行
+Body: `{ assetName?, quantity?, price?, action?, status?, ... }`
+
+### DELETE /api/import-sessions/[sessionId]/rows/[rowId]
+删除识别行
+
+### POST /api/import-sessions/[sessionId]/confirm
+确认保存
+Body: `{ saveMode: "HOLDING_SNAPSHOT" | "TRANSACTION_RECORD", defaultTransactionType? }`
+返回：`{ savedCount, ignoreCount, totalRows }`
+
 ### GET /api/daily-brief
 返回：最新简报
 

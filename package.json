@@ -25,6 +25,7 @@
     "db:wait": "tsx scripts/wait-for-db.ts",
     "setup:local": "npm run db:up && npm run db:wait && npm run db:generate && npm run db:push && npm run db:seed",
     "api:smoke": "tsx scripts/api-smoke.ts",
+    "import:smoke": "tsx scripts/import-smoke.ts",
     "job:update-prices": "tsx scripts/run-job.ts update-market-prices",
     "job:refresh-holdings": "tsx scripts/run-job.ts refresh-holding-snapshots",
     "job:portfolio-snapshot": "tsx scripts/run-job.ts generate-portfolio-snapshots",

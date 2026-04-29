@@ -49,12 +49,20 @@ LOCAL_UPLOAD_DIR="./uploads"
 UPLOAD_API_SECRET=""              # 生产环境必设
 ```
 
-## 阿里云 OSS 预留
+## Provider 状态
 
-`AliyunOssStorageProvider` 已实现骨架（配置检测），真实上传需：
+| Provider | 状态 | 说明 |
+|----------|------|------|
+| LocalStorageProvider | ✅ 完整可用 | 本地磁盘存储，文件存 `./uploads/imports/YYYY/MM/` |
+| AliyunOssStorageProvider | ⚠️ 骨架 | 仅配置检测，**真实 OSS 上传尚未实现** |
+
+## 阿里云 OSS 预留（骨架）
+
+**当前状态：骨架，不可用于生产。** `AliyunOssStorageProvider` 仅实现了配置检测（`isEnabled` 检查 env 变量）。真实上传需：
 1. `npm install ali-oss`
 2. 配置 ALIYUN_ACCESS_KEY_ID / ALIYUN_ACCESS_KEY_SECRET / ALIYUN_OSS_BUCKET / ALIYUN_OSS_ENDPOINT
-3. 实现 `save()` 方法
+3. 实现 `save()` 方法调用 OSS SDK
+4. 实现签名 URL 生成
 
 ## 生产环境安全注意事项
 
