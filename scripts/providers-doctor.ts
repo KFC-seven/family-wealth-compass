@@ -4,7 +4,10 @@
  * 用法: npm run providers:doctor
  * 配置矛盾时 exit non-zero。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();            // 加载 .env
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true }); // .env.local 覆盖
 import { maskSecret, maskWebhook, isSecretConfigured } from "../src/server/security/mask-secret";
 
 const PASS = "✅";

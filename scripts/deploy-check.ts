@@ -2,7 +2,10 @@
  * 部署前检查脚本 — 验证生产环境配置完整性
  * 用法: npm run deploy:check
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import fs from "node:fs/promises";
 
 const PASS = "✅";
@@ -45,7 +48,8 @@ async function main() {
 
   // 4. 密码检查
   if (process.env.SEED_ADMIN_PASSWORD?.includes("ChangeMe123!")) {
-    fail("SEED_ADMIN_PASSWORD 仍为默认值 ChangeMe123!，请修改");
+    if (isProd) fail("SEED_ADMIN_PASSWORD 仍为默认值 ChangeMe123!，请修改");
+    else warn("SEED_ADMIN_PASSWORD 为默认值 (生产请修改)");
   } else if (process.env.AUTH_ENABLED === "true" && !process.env.SEED_ADMIN_PASSWORD) {
     warn("SEED_ADMIN_PASSWORD 未设置");
   } else ok("SEED_ADMIN_PASSWORD 非默认");

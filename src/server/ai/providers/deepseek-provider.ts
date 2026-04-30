@@ -92,12 +92,30 @@ export class DeepSeekProvider implements AiProvider {
   }
 }
 
+const OUTPUT_SCHEMA = `{
+  "title": "string (max 100)",
+  "summary": "string (max 500)",
+  "marketOverview": [{"market": "string", "direction": "positive|negative|neutral|mixed", "summary": "string"}],
+  "householdImpact": {"direction": "positive|negative|neutral|mixed", "summary": "string", "mainContributors": ["string"], "mainRisks": ["string"]},
+  "memberImpacts": [{"memberName": "string", "summary": "string", "todayReturn": 0}],
+  "riskAlerts": [{"level": "low|medium|high", "type": "string", "relatedMember": "string", "description": "string", "relatedAsset": "string?"}],
+  "adviceCards": [{"adviceType": "CONTINUE_OBSERVING|BATCH_ADD|REDUCE_OBSERVE|TAKE_PROFIT_REVIEW|REDUCE_CONCENTRATION|INCREASE_CASH|NO_ACTION|WAIT_FOR_CONFIRMATION", "relatedMember": "string", "relatedAssetName": "string", "reason": "string", "riskLevel": "low|medium|high", "triggerCondition": "string", "uncertainty": "string", "philosophyMatch": "string"}],
+  "newsItems": [{"title": "string", "impact": "positive|negative|neutral", "importance": "high|medium|low", "summary": "string"}],
+  "disclaimer": "string (必须包含'不构成确定性投资指令')"
+}`;
+
 function buildSystemPrompt(): string {
-  return `你是家庭财富管理辅助分析助手。根据家庭资产数据生成结构化简报。
-你必须以 JSON 格式输出，严格遵守提供的 schema。
-你的建议必须包含 reason、riskLevel、triggerCondition、uncertainty、philosophyMatch。
-不得使用"保证收益""必赚""无风险""立即买入""必须买入""必须卖出""满仓""梭哈"等绝对化表述。
-所有建议仅供参考，必须包含免责声明。`;
+  return `你是家庭财富管理辅助分析助手。基于家庭资产数据生成结构化简报。
+你必须严格按照以下 JSON schema 输出，所有字段必填：
+
+${OUTPUT_SCHEMA}
+
+规则:
+- 所有字段必须存在，数组至少有一项
+- adviceType 必须从枚举值中选择
+- disclaimer 必须包含"不构成确定性投资指令"
+- 建议必须包含 reason、riskLevel、triggerCondition、uncertainty、philosophyMatch
+- 不得使用"保证收益""必赚""无风险""立即买入""满仓""梭哈"等词汇`;
 }
 
 function buildUserPrompt(input: AiBriefInput): string {

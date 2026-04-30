@@ -7,7 +7,10 @@
  * 全部通过 exit code = 0，失败非 0。
  */
 
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 

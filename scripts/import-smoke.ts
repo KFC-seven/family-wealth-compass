@@ -16,7 +16,10 @@
  *
  * 不依赖真实 OCR、OSS 或公网。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import fs from "node:fs/promises";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";

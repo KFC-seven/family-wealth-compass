@@ -10,7 +10,10 @@
  *
  * 注意: 需要先加载环境变量（tsx + dotenv 已在 .env 中处理）。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 
 // 注册所有任务（side-effect import）
 import "../src/server/jobs/tasks/update-market-prices";

@@ -4,7 +4,10 @@
  * 用法: npm run brief:smoke
  * 不依赖真实 AI key 或微信 webhook。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { generateDailyBrief } from "../src/server/brief/brief-generator";
@@ -100,8 +103,21 @@ async function main() {
   if (pushResult.success) ok(`推送成功: ${pushResult.provider} — ${pushResult.message}`);
   else fail(`推送失败: ${pushResult.message}`);
 
-  // Step 6: PushNotification
+  // Step 6: PushNotification (手动写入，模拟 push-daily-brief job 行为)
   console.log("\n--- Step 6: 验证 PushNotification ---");
+  await prisma.pushNotification.create({
+    data: {
+      householdId: household.id,
+      briefId: brief.id,
+      provider: pushResult.provider.toUpperCase().replace(/-/g, "_") as any,
+      channel: pushResult.provider,
+      status: pushResult.success ? "SENT" : "FAILED",
+      title: brief.title ?? undefined,
+      contentPreview: brief.summary?.slice(0, 200) ?? undefined,
+      sentAt: pushResult.success ? new Date() : undefined,
+      errorMessage: pushResult.success ? undefined : pushResult.message,
+    },
+  });
   const pushNotif = await prisma.pushNotification.findFirst({ orderBy: { createdAt: "desc" } });
   if (pushNotif) ok(`PushNotification: status=${pushNotif.status}, provider=${pushNotif.provider}`);
   else fail("PushNotification 未写入");

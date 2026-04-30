@@ -4,7 +4,10 @@
  * 用法: npm run real-providers:smoke
  * 无 key 时 SKIP exit 0, 配置矛盾或调用失败 exit non-zero。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import { maskSecret, maskWebhook, isSecretConfigured } from "../src/server/security/mask-secret";
 
 const PASS = "✅";

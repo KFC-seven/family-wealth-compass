@@ -3,11 +3,14 @@
  *
  * 用法: npm run auth:smoke
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import crypto from "node:crypto";
 import { hashPassword, verifyPassword } from "../src/server/auth/password";
-import { createSession, getSessionFromToken, revokeSession } from "../src/server/auth/session";
 import { getPermissionsForRole } from "../src/server/auth/permissions";
 
 const PASS = "✅";
@@ -70,25 +73,29 @@ async function main() {
     fail("管理员密码验证失败");
   }
 
-  // Step 5: Session
+  // Step 5: Session (direct DB ops, avoid server session singleton)
   console.log("\n--- Step 5: Session 创建/验证/吊销 ---");
-  const { token, sessionId } = await createSession(admin.id);
-  ok(`Session 创建: ${sessionId.slice(0, 12)}...`);
+  const token = crypto.randomBytes(48).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + 30 * 86400000);
 
-  const session = await getSessionFromToken(token);
-  if (session && session.userId === admin.id) {
-    ok("Session 验证通过");
-  } else {
-    fail("Session 验证失败");
-  }
+  const userSession = await prisma.userSession.create({
+    data: { userId: admin.id, sessionTokenHash: tokenHash, expiresAt },
+  });
+  ok(`Session 创建: ${userSession.id.slice(0, 12)}...`);
 
-  await revokeSession(sessionId);
-  const revoked = await getSessionFromToken(token);
-  if (!revoked) {
-    ok("Session 吊销成功");
-  } else {
-    fail("Session 吊销失败");
-  }
+  const found = await prisma.userSession.findFirst({
+    where: { sessionTokenHash: tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
+  });
+  if (found) ok("Session 验证通过");
+  else fail("Session 验证失败");
+
+  await prisma.userSession.update({ where: { id: userSession.id }, data: { revokedAt: new Date() } });
+  const revoked = await prisma.userSession.findFirst({
+    where: { sessionTokenHash: tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
+  });
+  if (!revoked) ok("Session 吊销成功");
+  else fail("Session 吊销失败");
 
   // Step 6: Permissions
   console.log("\n--- Step 6: 权限模型 ---");

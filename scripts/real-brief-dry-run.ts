@@ -7,7 +7,10 @@
  *
  * 无真实 key 时使用 mock 并通过。
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 import { maskSecret, maskWebhook, isSecretConfigured } from "../src/server/security/mask-secret";
 import { generateDailyBrief } from "../src/server/brief/brief-generator";
 import { getPushProvider } from "../src/server/push/registry";

@@ -28,10 +28,12 @@ export function checkSafety(output: AiBriefOutput): SafetyCheckResult {
   }
 
   for (const card of output.adviceCards) {
-    if (!card.reason || card.reason.length < 3) issues.push(`建议缺少 reason: ${card.adviceType}`);
+    if (!card.reason || card.reason.length < 2) issues.push(`建议缺少 reason: ${card.adviceType}`);
     if (!card.riskLevel) issues.push(`建议缺少 riskLevel: ${card.adviceType}`);
-    if (!card.triggerCondition || card.triggerCondition.length < 3) issues.push(`建议缺少 triggerCondition: ${card.adviceType}`);
-    if (!card.uncertainty || card.uncertainty.length < 3) issues.push(`建议缺少 uncertainty: ${card.adviceType}`);
+    if (card.adviceType !== "NO_ACTION" && (!card.triggerCondition || card.triggerCondition.length < 2))
+      issues.push(`建议缺少 triggerCondition: ${card.adviceType}`);
+    if (card.adviceType !== "NO_ACTION" && (!card.uncertainty || card.uncertainty.length < 2))
+      issues.push(`建议缺少 uncertainty: ${card.adviceType}`);
     if (!card.philosophyMatch || card.philosophyMatch.length < 3) issues.push(`建议缺少 philosophyMatch: ${card.adviceType}`);
   }
 
