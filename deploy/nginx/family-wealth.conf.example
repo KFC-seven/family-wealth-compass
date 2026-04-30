@@ -1,0 +1,74 @@
+# 家庭财富罗盘 Nginx 配置示例
+# 复制到 /etc/nginx/sites-available/ 或 /etc/nginx/conf.d/
+# 修改 server_name 为实际域名
+#
+# 用法:
+#   sudo cp deploy/nginx/family-wealth.conf.example /etc/nginx/sites-available/family-wealth
+#   sudo nano /etc/nginx/sites-available/family-wealth  # 修改 server_name
+#   sudo ln -s /etc/nginx/sites-available/family-wealth /etc/nginx/sites-enabled/
+#   sudo nginx -t
+#   sudo systemctl reload nginx
+
+# HTTP → HTTPS 重定向（如已配置证书）
+# server {
+#   listen 80;
+#   server_name example.com;
+#   return 301 https://$host$request_uri;
+# }
+
+server {
+  listen 80;
+  server_name example.com;  # 改为实际域名
+
+  # 上传文件大小限制（必须 >= UPLOAD_MAX_FILE_SIZE_MB）
+  client_max_body_size 12M;
+
+  # Gzip
+  gzip on;
+  gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+  gzip_min_length 256;
+
+  # 安全头
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-XSS-Protection "1; mode=block" always;
+
+  # 不暴露 uploads 原始目录
+  # location /uploads { deny all; }
+
+  # 反代到 Next.js
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 60s;
+  }
+}
+
+# HTTPS 配置（使用 certbot 或阿里云证书后启用）
+# server {
+#   listen 443 ssl http2;
+#   server_name example.com;
+#
+#   ssl_certificate     /etc/ssl/certs/example.com.pem;
+#   ssl_certificate_key /etc/ssl/private/example.com.key;
+#   ssl_session_timeout 1d;
+#   ssl_session_cache shared:SSL:10m;
+#   ssl_protocols TLSv1.2 TLSv1.3;
+#   ssl_ciphers HIGH:!aNULL:!MD5;
+#
+#   client_max_body_size 12M;
+#
+#   location / {
+#     proxy_pass http://127.0.0.1:3000;
+#     proxy_set_header Host $host;
+#     proxy_set_header X-Real-IP $remote_addr;
+#     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#     proxy_set_header X-Forwarded-Proto https;
+#   }
+# }

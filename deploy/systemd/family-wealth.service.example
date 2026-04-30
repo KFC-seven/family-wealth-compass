@@ -1,0 +1,36 @@
+# 家庭财富罗盘 systemd 服务示例
+# 复制到 /etc/systemd/system/family-wealth.service 后修改路径
+#
+# 用法:
+#   sudo cp deploy/systemd/family-wealth.service.example /etc/systemd/system/family-wealth.service
+#   sudo nano /etc/systemd/system/family-wealth.service  # 修改路径和用户
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable family-wealth
+#   sudo systemctl start family-wealth
+#   sudo systemctl status family-wealth
+
+[Unit]
+Description=Family Wealth Compass
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/opt/family-wealth
+EnvironmentFile=/opt/family-wealth/.env.production
+ExecStart=/usr/bin/node /opt/family-wealth/.next/standalone/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/family-wealth/logs/app.log
+StandardError=append:/opt/family-wealth/logs/app-error.log
+
+# Security
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/family-wealth/uploads /opt/family-wealth/logs /opt/family-wealth/backups
+
+[Install]
+WantedBy=multi-user.target

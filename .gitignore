@@ -15,3 +15,8 @@ tmp-*.ts
 
 # Phase 10: uploaded files
 uploads/
+
+# Phase 13: logs, backups, production env
+logs/
+backups/
+.env.production

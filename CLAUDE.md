@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。12 个阶段完成（认证/权限可用，DeepSeek/阿里云 OCR/OSS 可配置骨架）。
+家庭财富投资管理 Web 应用。13 个阶段完成（生产部署硬化，认证/权限可用）。
 
 ## 运行命令
 
@@ -209,7 +209,17 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] CUSTOM 权限框架
   - [x] auth:smoke 6/6 通过
   - [x] seed 管理员 (SEED_ADMIN_EMAIL/PASSWORD)
-- [ ] 真实 DeepSeek API 调用 (需 DEEPSEEK_API_KEY)
+- [x] 生产部署硬化 (Phase 13)
+  - [x] .env.production.example
+  - [x] PM2 ecosystem.config.cjs
+  - [x] systemd service 示例
+  - [x] Nginx 反向代理配置示例
+  - [x] PostgreSQL 生产部署与硬化文档
+  - [x] db backup/restore 脚本
+  - [x] deploy:check 部署检查
+  - [x] security-hardening 安全清单
+  - [x] production-deployment 完整部署指南
+- [ ] 真实 DeepSeek API 调用验证 (需 DEEPSEEK_API_KEY)
 - [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
 
 ## 约定
