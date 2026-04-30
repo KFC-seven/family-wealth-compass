@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。13 个阶段完成（生产部署硬化，认证/权限可用）。
+家庭财富投资管理 Web 应用，单家庭自用。14 个阶段完成。
 
 ## 运行命令
 
@@ -38,6 +38,8 @@ npm run job:morning-brief     # 每日晨报（生成+推送）
 npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
 npm run import:smoke    # 导入链路冒烟测试 (service-level)
 npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
+npm run providers:doctor     # Provider 配置诊断
+npm run real-providers:smoke # 真实 Provider 测试 (无 key 时 SKIP)
 ```
 
 ## 技术栈
@@ -219,8 +221,23 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] deploy:check 部署检查
   - [x] security-hardening 安全清单
   - [x] production-deployment 完整部署指南
-- [ ] 真实 DeepSeek API 调用验证 (需 DEEPSEEK_API_KEY)
-- [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
+- [x] Provider 配置验证 + 产品边界固化 (Phase 14)
+  - [x] DeepSeek/WeCom/Server 酱 provider 配置检测完善
+  - [x] providers:doctor 诊断脚本
+  - [x] real-providers:smoke (无 key 时 SKIP)
+  - [x] AI/Push status API 不暴露 secret
+  - [x] 明确"单家庭自用"产品边界
+- [ ] 真实 DeepSeek API 调用验证 (需 DEEPSEEK_API_KEY, provider 已可配置)
+- [ ] 真实 WeCom/Server 酱推送 (需配置 webhook, provider 已可配置)
+
+## 明确不做 / Out of Scope
+
+- 多家庭 SaaS
+- 多租户隔离 / 公开注册 / 付费订阅
+- 自动交易 / 券商银行自动登录
+- 企业级 RBAC 权限后台
+
+Household 是单家庭容器，不表示 SaaS 多租户。认证仅服务该家庭内部成员。
 
 ## 约定
 
