@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用，单家庭自用。17 个阶段完成（含 ECS 部署验收）。
+家庭财富投资管理 Web 应用，单家庭自用。17 个阶段完成，已部署到阿里云 ECS。
 
 ## 运行命令
 
@@ -244,11 +244,15 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] 明确"单家庭自用"产品边界
 - [x] DeepSeek + Server 酱本地验证 (Phase 15, 用户已配置 key)
 - [ ] 真实 WeCom Bot 推送验证 (用户未配置)
-- [x] ECS 部署验收准备 (Phase 17)
-  - [x] deployment-runbook.md: 13 步人工验收清单
-  - [x] 12 个部署文件全部审查就绪
-  - [x] 本地全量回归 9/9 通过
-  - [ ] ECS 实际部署 + 域名/HTTPS (需服务器环境)
+- [x] ECS 部署验收 (Phase 17)
+  - [x] 阿里云 ECS 实际部署: 106.15.37.44
+  - [x] PostgreSQL 18 + Node 22 + Nginx + PM2
+  - [x] API 模式 + 认证已开启
+  - [x] DeepSeek + Server 酱生产验证通过
+  - [x] job:daily-valuation 生产通过 (40/0/4)
+  - [x] crontab 定时任务已配置
+  - [x] 数据库备份 (87K SQL)
+  - [ ] HTTPS/域名 (使用 IP 直连)
 
 ## 明确不做 / Out of Scope
 
