@@ -1,11 +1,13 @@
+import { loadEnv } from "./utils/load-env.js";
+loadEnv();
 /**
  * 部署前检查脚本 — 验证生产环境配置完整性
  * 用法: npm run deploy:check
  */
-import dotenv from "dotenv";
-import path from "node:path";
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+
+
+
+
 import fs from "node:fs/promises";
 
 const PASS = "✅";

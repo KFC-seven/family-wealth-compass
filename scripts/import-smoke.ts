@@ -1,3 +1,5 @@
+import { loadEnv } from "./utils/load-env.js";
+loadEnv();
 /**
  * Import smoke test — 覆盖完整导入链路（service-level，不需要 dev server）。
  *
@@ -16,10 +18,10 @@
  *
  * 不依赖真实 OCR、OSS 或公网。
  */
-import dotenv from "dotenv";
-import path from "node:path";
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+
+
+
+
 import fs from "node:fs/promises";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";

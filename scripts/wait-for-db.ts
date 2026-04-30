@@ -1,3 +1,5 @@
+import { loadEnv } from "./utils/load-env.js";
+loadEnv();
 /**
  * 等待 PostgreSQL 可用。
  *
@@ -8,10 +10,10 @@
  * 通过 DATABASE_URL 环境变量连接。
  */
 
-import dotenv from "dotenv";
-import path from "node:path";
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+
+
+
+
 import { Pool } from "pg";
 
 const MAX_RETRIES = parseInt(process.argv[2] || "30", 10);

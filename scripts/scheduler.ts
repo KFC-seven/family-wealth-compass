@@ -1,3 +1,5 @@
+import { loadEnv } from "./utils/load-env.js";
+loadEnv();
 /**
  * 可选常驻调度器。
  *
@@ -15,10 +17,10 @@
  * 调度规则从数据库 ScheduledJob 表读取。
  * 每分钟检查一次是否有需要执行的任务。
  */
-import dotenv from "dotenv";
-import path from "node:path";
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+
+
+
+
 
 // 注册所有任务
 import "../src/server/jobs/tasks/update-market-prices";

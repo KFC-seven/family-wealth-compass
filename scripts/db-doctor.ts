@@ -1,3 +1,5 @@
+import { loadEnv } from "./utils/load-env.js";
+loadEnv();
 /**
  * 数据库诊断脚本 — 检查 PostgreSQL 连接、schema、seed 数据完整性。
  *
@@ -7,10 +9,10 @@
  * 全部通过 exit code = 0，失败非 0。
  */
 
-import dotenv from "dotenv";
-import path from "node:path";
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+
+
+
+
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 

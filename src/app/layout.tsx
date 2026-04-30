@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "家庭财富罗盘",
   description: "家庭财富投资管理",
