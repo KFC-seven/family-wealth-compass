@@ -27,6 +27,7 @@
     "api:smoke": "tsx scripts/api-smoke.ts",
     "import:smoke": "tsx scripts/import-smoke.ts",
     "brief:smoke": "tsx scripts/brief-smoke.ts",
+    "auth:smoke": "tsx scripts/auth-smoke.ts",
     "job:update-prices": "tsx scripts/run-job.ts update-market-prices",
     "job:refresh-holdings": "tsx scripts/run-job.ts refresh-holding-snapshots",
     "job:portfolio-snapshot": "tsx scripts/run-job.ts generate-portfolio-snapshots",

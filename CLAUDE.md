@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。11 个阶段完成（Phase 11 AI 简报/Mock 推送可用，DeepSeek 可配置，阿里云 OCR/OSS 为骨架）。
+家庭财富投资管理 Web 应用。12 个阶段完成（认证/权限可用，DeepSeek/阿里云 OCR/OSS 可配置骨架）。
 
 ## 运行命令
 
@@ -55,7 +55,7 @@ npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
 
 ```
 src/
-  app/                          # 前端页面 (8个路由) + API (29个路由)
+  app/                          # 前端页面 (10个路由) + API (35个路由)
   components/                   # 8个分类目录, 60+ 组件
   data/                         # 12个 mock 数据文件
   lib/                          # format, returns, import-validation, api-client
@@ -89,6 +89,8 @@ docs/
 | `/import` | 导入确认 (上传/OCR/编辑/校验/保存) | 静态 |
 | `/brief` | 每日简报 (市场/成员/新闻/风险/建议/推送) | 静态 |
 | `/settings` | 设置 (10个分组) | 静态 |
+| `/login` | 登录 | 动态 |
+| `/account` | 账户与安全 | 动态 |
 
 ## API (29个)
 
@@ -107,6 +109,9 @@ docs/
 `/api/daily-brief/push` (POST),
 `/api/ai/status` (GET),
 `/api/push/status` (GET), `/api/push/test` (POST),
+`/api/auth/login` (POST), `/api/auth/logout` (POST),
+`/api/auth/me` (GET), `/api/auth/change-password` (POST),
+`/api/auth/sessions` (GET), `/api/auth/sessions/[id]` (DELETE),
 `/api/settings` (GET+POST),
 `/api/jobs` (GET), `/api/jobs/runs` (GET), `/api/jobs/run` (POST),
 `/api/market-data/sources` (GET), `/api/market-data/sources/check` (POST)
@@ -116,7 +121,7 @@ docs/
 22个模型: User, Household, Member, Account, Asset, Holding, Transaction,
 PriceSnapshot, PortfolioSnapshot, InvestorProfile, ImportSession,
 RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSource,
-AiGenerationRun, PushNotification
+AiGenerationRun, PushNotification, PasswordCredential, UserSession
 
 ## 定时任务和行情数据源 (Phase 8)
 
@@ -193,7 +198,19 @@ AiGenerationRun, PushNotification
   - [ ] 真实 DeepSeek API 调用 (需 DEEPSEEK_API_KEY)
   - [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
   - [ ] 阿里云百炼真实调用 (骨架已预留)
-- [ ] 真实AI/推送/认证
+- [x] 认证与家庭权限 (Phase 12)
+  - [x] 密码哈希 (PBKDF2-SHA512, 10万次迭代)
+  - [x] PasswordCredential + UserSession 模型
+  - [x] 登录/登出/me/改密/sessions API
+  - [x] /login 和 /account 页面
+  - [x] Middleware 页面保护 (AUTH_ENABLED=true 时)
+  - [x] Guards + Permissions (管理员/成员权限分离)
+  - [x] ALL_VISIBLE 权限模式
+  - [x] CUSTOM 权限框架
+  - [x] auth:smoke 6/6 通过
+  - [x] seed 管理员 (SEED_ADMIN_EMAIL/PASSWORD)
+- [ ] 真实 DeepSeek API 调用 (需 DEEPSEEK_API_KEY)
+- [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
 
 ## 约定
 

@@ -27,13 +27,33 @@ async function main() {
   await prisma.member.deleteMany();
   await prisma.appSettings.deleteMany();
   await prisma.household.deleteMany();
+  await prisma.userSession.deleteMany();
+  await prisma.passwordCredential.deleteMany();
   await prisma.user.deleteMany();
 
-  // User
+  // User with password
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@example.local";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!";
+  const adminName = process.env.SEED_ADMIN_NAME ?? "家庭管理员";
+
+  // Import password module
+  const { hashPassword } = await import("../src/server/auth/password");
+  const { hash, salt } = hashPassword(adminPassword);
+
   const user = await prisma.user.create({
-    data: { name: "家庭管理员", role: "OWNER" },
+    data: {
+      name: adminName,
+      email: adminEmail,
+      role: "OWNER",
+      passwordCredential: {
+        create: { passwordHash: hash, passwordSalt: salt },
+      },
+    },
   });
-  console.log(`  Created user: ${user.id}`);
+  console.log(`  Created user: ${user.id} (${adminEmail})`);
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.log(`  ⚠  使用默认密码，生产环境请设置 SEED_ADMIN_PASSWORD`);
+  }
 
   // Household
   const household = await prisma.household.create({
@@ -44,7 +64,7 @@ async function main() {
   // Members
   const member1 = await prisma.member.create({
     data: {
-      householdId: household.id, name: "爸爸", displayName: "爸爸",
+      householdId: household.id, userId: user.id, name: "爸爸", displayName: "爸爸",
       roleLabel: "管理员", isAdmin: true, sortOrder: 0,
     },
   });
