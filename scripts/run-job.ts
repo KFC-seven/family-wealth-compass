@@ -17,6 +17,9 @@ import "../src/server/jobs/tasks/update-market-prices";
 import "../src/server/jobs/tasks/refresh-holding-snapshots";
 import "../src/server/jobs/tasks/generate-portfolio-snapshots";
 import "../src/server/jobs/tasks/run-daily-valuation";
+import "../src/server/jobs/tasks/generate-daily-brief";
+import "../src/server/jobs/tasks/push-daily-brief";
+import "../src/server/jobs/tasks/run-morning-brief";
 
 import { runJob } from "../src/server/jobs/runner";
 

@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用。10 个阶段完成（Phase 10 本地上传/Mock OCR 可用，阿里云 OSS/OCR 为骨架）。
+家庭财富投资管理 Web 应用。11 个阶段完成（Phase 11 AI 简报/Mock 推送可用，DeepSeek 可配置，阿里云 OCR/OSS 为骨架）。
 
 ## 运行命令
 
@@ -30,10 +30,14 @@ npm run job:update-prices     # 更新行情/净值
 npm run job:refresh-holdings  # 刷新持仓快照
 npm run job:portfolio-snapshot # 生成组合快照
 npm run scheduler:start       # 常驻调度器（开发用）
+npm run job:generate-brief    # 生成每日简报
+npm run job:push-brief        # 推送每日简报
+npm run job:morning-brief     # 每日晨报（生成+推送）
 
 # 测试
 npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
-npm run import:smoke    # 导入链路冒烟测试 (service-level, 不需 dev server)
+npm run import:smoke    # 导入链路冒烟测试 (service-level)
+npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
 ```
 
 ## 技术栈
@@ -51,7 +55,7 @@ npm run import:smoke    # 导入链路冒烟测试 (service-level, 不需 dev se
 
 ```
 src/
-  app/                          # 前端页面 (8个路由) + API (24个路由)
+  app/                          # 前端页面 (8个路由) + API (29个路由)
   components/                   # 8个分类目录, 60+ 组件
   data/                         # 12个 mock 数据文件
   lib/                          # format, returns, import-validation, api-client
@@ -86,7 +90,7 @@ docs/
 | `/brief` | 每日简报 (市场/成员/新闻/风险/建议/推送) | 静态 |
 | `/settings` | 设置 (10个分组) | 静态 |
 
-## API (24个)
+## API (29个)
 
 `/api/health`, `/api/portfolio/household-summary`,
 `/api/members`, `/api/members/[id]`, `/api/members/[id]/summary`,
@@ -98,15 +102,21 @@ docs/
 `/api/import-sessions/[id]/rows` (POST),
 `/api/import-sessions/[id]/rows/[rowId]` (PATCH+DELETE),
 `/api/import-sessions/[id]/confirm` (POST),
-`/api/daily-brief` (GET), `/api/settings` (GET+POST),
+`/api/daily-brief` (GET),
+`/api/daily-brief/generate` (POST),
+`/api/daily-brief/push` (POST),
+`/api/ai/status` (GET),
+`/api/push/status` (GET), `/api/push/test` (POST),
+`/api/settings` (GET+POST),
 `/api/jobs` (GET), `/api/jobs/runs` (GET), `/api/jobs/run` (POST),
 `/api/market-data/sources` (GET), `/api/market-data/sources/check` (POST)
 
 ## 数据库 (Prisma 7 + PostgreSQL)
 
-20个模型: User, Household, Member, Account, Asset, Holding, Transaction,
+22个模型: User, Household, Member, Account, Asset, Holding, Transaction,
 PriceSnapshot, PortfolioSnapshot, InvestorProfile, ImportSession,
-RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSource
+RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSource,
+AiGenerationRun, PushNotification
 
 ## 定时任务和行情数据源 (Phase 8)
 
@@ -171,6 +181,18 @@ RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSo
   - [x] 文件校验 (大小/MIME/扩展名/hash)
   - [ ] 阿里云 OSS 真实上传 (骨架已预留)
   - [ ] 阿里云 OCR 真实调用 (骨架已预留)
+- [x] AI 简报生成 + 微信推送 (Phase 11)
+  - [x] AI provider 抽象层 (Mock AI + DeepSeek + 阿里云百炼骨架)
+  - [x] DailyBrief 生成服务 (context-builder + generator + persistence)
+  - [x] AI 输出 Zod 校验 + 安全检查 (禁止词/建议完整性)
+  - [x] 微信推送 provider 抽象层 (Mock + WeCom Bot + Server 酱)
+  - [x] 3 个新任务: generate-daily-brief, push-daily-brief, run-morning-brief
+  - [x] 5 个新 API: brief generate/push, ai status, push status/test
+  - [x] job:morning-brief 可完整执行 (生成→推送)
+  - [x] brief:smoke 6/6 通过
+  - [ ] 真实 DeepSeek API 调用 (需 DEEPSEEK_API_KEY)
+  - [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
+  - [ ] 阿里云百炼真实调用 (骨架已预留)
 - [ ] 真实AI/推送/认证
 
 ## 约定

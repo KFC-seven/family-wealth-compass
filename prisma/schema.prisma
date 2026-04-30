@@ -161,6 +161,33 @@ enum MarketDataSourceStatus {
   DISABLED
 }
 
+enum AiProvider {
+  MOCK
+  DEEPSEEK
+  ALIYUN_BAILIAN
+  OPENAI_COMPATIBLE
+}
+
+enum AiRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+enum PushProvider {
+  MOCK
+  WECOM_BOT
+  SERVER_CHAN
+}
+
+enum PushStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String?  @unique
@@ -408,6 +435,41 @@ model RecognizedImportRow {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   session ImportSession @relation(fields: [importSessionId], references: [id])
+}
+
+model AiGenerationRun {
+  id               String     @id @default(cuid())
+  householdId      String
+  briefId          String?
+  provider         AiProvider
+  model            String?
+  status           AiRunStatus @default(RUNNING)
+  startedAt        DateTime    @default(now())
+  finishedAt       DateTime?
+  durationMs       Int?
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  inputHash        String?
+  outputHash       String?
+  errorMessage     String?
+  metadata         Json?
+  createdAt        DateTime    @default(now())
+}
+
+model PushNotification {
+  id             String     @id @default(cuid())
+  householdId    String
+  briefId        String?
+  provider       PushProvider
+  channel        String?
+  status         PushStatus @default(PENDING)
+  title          String?
+  contentPreview String?
+  sentAt         DateTime?
+  errorMessage   String?
+  metadata       Json?
+  createdAt      DateTime   @default(now())
 }
 
 model DailyBrief {

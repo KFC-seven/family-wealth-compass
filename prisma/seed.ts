@@ -9,6 +9,8 @@ async function main() {
   console.log("Seeding database...");
 
   // Clean existing data
+  await prisma.pushNotification.deleteMany();
+  await prisma.aiGenerationRun.deleteMany();
   await prisma.jobRun.deleteMany();
   await prisma.scheduledJob.deleteMany();
   await prisma.marketDataSource.deleteMany();
@@ -184,6 +186,9 @@ async function main() {
     { name: "refresh-holding-snapshots", displayName: "刷新持仓快照", cron: "0 22 * * 1-5", desc: "根据最新价格/净值刷新持仓估值字段" },
     { name: "generate-portfolio-snapshots", displayName: "生成组合快照", cron: "0 23 * * 1-5", desc: "为家庭/成员/持仓生成当日 PortfolioSnapshot" },
     { name: "run-daily-valuation", displayName: "每日估值", cron: null, desc: "串行执行: 行情更新 → 持仓刷新 → 组合快照生成" },
+    { name: "generate-daily-brief", displayName: "生成每日简报", cron: "0 7 * * *", desc: "使用 AI/Mock 生成 DailyBrief" },
+    { name: "push-daily-brief", displayName: "推送每日简报", cron: "0 8 * * *", desc: "将 DailyBrief 推送到微信通道" },
+    { name: "run-morning-brief", displayName: "每日晨报", cron: null, desc: "串行执行: 生成简报 → 推送简报" },
   ];
   for (const jc of jobConfigs) {
     await prisma.scheduledJob.create({
