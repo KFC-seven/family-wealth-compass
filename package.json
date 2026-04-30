@@ -31,6 +31,7 @@
     "providers:doctor": "tsx scripts/providers-doctor.ts",
     "real-providers:smoke": "tsx scripts/real-providers-smoke.ts",
     "real-brief:dry-run": "tsx scripts/real-brief-dry-run.ts",
+    "prod:smoke": "tsx scripts/prod-smoke.ts",
     "deploy:check": "tsx scripts/deploy-check.ts",
     "db:backup": "bash scripts/backup-db.sh",
     "db:restore": "bash scripts/restore-db.sh",

@@ -2,9 +2,12 @@
  * PM2 生产配置 — 家庭财富罗盘
  *
  * 用法:
- *   pm2 start ecosystem.config.cjs --env production
+ *   pm2 start ecosystem.config.cjs
  *   pm2 save
  *   pm2 startup
+ *
+ * 生产 .env.production 中的变量由脚本加载（见 scripts/utils/load-env.ts）。
+ * CLI 任务 (crontab) 会自动加载 .env.production。
  */
 module.exports = {
   apps: [{
@@ -25,6 +28,7 @@ module.exports = {
     autorestart: true,
     max_restarts: 10,
     min_uptime: "10s",
-    listen_timeout: 10000,
+    listen_timeout: 15000,
+    kill_timeout: 8000,
   }],
 };

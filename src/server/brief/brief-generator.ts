@@ -63,21 +63,27 @@ export async function generateDailyBrief(options: GenerateBriefOptions = {}) {
       }
     }
   } catch (err) {
-    console.error(`[Brief] AI 生成失败: ${(err as Error).message}`);
-    aiFailed = true;
-
-    // 更新 AiGenerationRun
-    await prisma.aiGenerationRun.update({
-      where: { id: aiRun.id },
-      data: {
-        status: "FAILED",
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAt,
-        errorMessage: (err as Error).message.slice(0, 500),
-      },
-    });
-
-    throw err;
+    console.error(`[Brief] AI 生成失败: ${(err as Error).message.slice(0, 200)}`);
+    // Fallback to Mock AI
+    try {
+      const { MockAiProvider } = await import("../ai/providers/mock-ai-provider");
+      const mock = new MockAiProvider();
+      output = await mock.generateStructuredBrief(context);
+      output = dailyBriefAiOutputSchema.parse(output) as AiBriefOutput;
+      console.log(`[Brief] Fallback 到 Mock AI 成功`);
+    } catch (mockErr) {
+      console.error(`[Brief] Mock fallback 也失败: ${(mockErr as Error).message}`);
+      await prisma.aiGenerationRun.update({
+        where: { id: aiRun.id },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          durationMs: Date.now() - startedAt,
+          errorMessage: (err as Error).message.slice(0, 500),
+        },
+      });
+      throw err;
+    }
   }
 
   await prisma.aiGenerationRun.update({

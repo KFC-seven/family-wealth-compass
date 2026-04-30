@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用，单家庭自用。15 个阶段完成。
+家庭财富投资管理 Web 应用，单家庭自用。16 个阶段完成（含生产部署硬化）。
 
 ## 运行命令
 
@@ -41,6 +41,8 @@ npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
 npm run providers:doctor     # Provider 配置诊断
 npm run real-providers:smoke # 真实 Provider 测试 (无 key 时 SKIP)
 npm run real-brief:dry-run    # 真实简报演练 (--push 含推送)
+npm run deploy:check       # 部署前安全检查
+npm run prod:smoke          # 生产环境冒烟测试
 ```
 
 ## 技术栈
@@ -228,6 +230,16 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] real-providers:smoke (无 key SKIP, 有 key 真实调用+token统计)
   - [x] real-brief:dry-run (真实简报演练, --push 推送)
   - [x] secret mask 工具 (maskSecret/maskWebhook/maskUrl)
+- [x] 阿里云 ECS 生产部署硬化 (Phase 16)
+  - [x] .env.production.example 完整
+  - [x] PM2 配置 + systemd 示例
+  - [x] Nginx 反代配置 + HTTPS 说明
+  - [x] PostgreSQL 生产硬化 + db backup/restore
+  - [x] crontab 定时任务示例
+  - [x] deploy:check 生产检查增强
+  - [x] prod:smoke 生产验收
+  - [x] 回滚方案文档化
+  - [x] scripts 统一 .env.production 加载
   - [x] AI/Push status API 不暴露 secret
   - [x] 明确"单家庭自用"产品边界
 - [ ] 真实 DeepSeek API 调用验证 (provider 已可配置, 需用户提供 key)

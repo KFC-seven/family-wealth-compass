@@ -35,10 +35,21 @@ async function main() {
     else ok("DATABASE_URL 已设置");
   }
 
-  // 3. AUTH
+  // 3. API mode
+  if (process.env.NEXT_PUBLIC_USE_API !== "true") {
+    if (isProd) fail("生产环境 NEXT_PUBLIC_USE_API 必须为 true");
+    else warn("NEXT_PUBLIC_USE_API !== true (开发可接受)");
+  } else ok("NEXT_PUBLIC_USE_API=true");
+
+  // 4. AUTH
   if (process.env.AUTH_ENABLED !== "true") {
-    warn("AUTH_ENABLED 未开启 (生产应设为 true)");
+    if (isProd) fail("生产环境 AUTH_ENABLED 必须为 true");
+    else warn("AUTH_ENABLED 未开启");
   } else ok("AUTH_ENABLED=true");
+
+  if (isProd && process.env.AUTH_DEV_ALLOW_SEED_LOGIN === "true") {
+    warn("生产环境 AUTH_DEV_ALLOW_SEED_LOGIN 应为 false");
+  }
 
   if (isProd && process.env.AUTH_REQUIRE_HTTPS !== "true") {
     warn("生产环境建议 AUTH_REQUIRE_HTTPS=true");
