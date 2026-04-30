@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用，单家庭自用。14 个阶段完成。
+家庭财富投资管理 Web 应用，单家庭自用。15 个阶段完成。
 
 ## 运行命令
 
@@ -40,6 +40,7 @@ npm run import:smoke    # 导入链路冒烟测试 (service-level)
 npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
 npm run providers:doctor     # Provider 配置诊断
 npm run real-providers:smoke # 真实 Provider 测试 (无 key 时 SKIP)
+npm run real-brief:dry-run    # 真实简报演练 (--push 含推送)
 ```
 
 ## 技术栈
@@ -221,14 +222,16 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] deploy:check 部署检查
   - [x] security-hardening 安全清单
   - [x] production-deployment 完整部署指南
-- [x] Provider 配置验证 + 产品边界固化 (Phase 14)
+- [x] Provider 配置验证 + 产品边界固化 (Phase 14-15)
   - [x] DeepSeek/WeCom/Server 酱 provider 配置检测完善
-  - [x] providers:doctor 诊断脚本
-  - [x] real-providers:smoke (无 key 时 SKIP)
+  - [x] providers:doctor (配置矛盾检测, mask, 修复建议)
+  - [x] real-providers:smoke (无 key SKIP, 有 key 真实调用+token统计)
+  - [x] real-brief:dry-run (真实简报演练, --push 推送)
+  - [x] secret mask 工具 (maskSecret/maskWebhook/maskUrl)
   - [x] AI/Push status API 不暴露 secret
   - [x] 明确"单家庭自用"产品边界
-- [ ] 真实 DeepSeek API 调用验证 (需 DEEPSEEK_API_KEY, provider 已可配置)
-- [ ] 真实 WeCom/Server 酱推送 (需配置 webhook, provider 已可配置)
+- [ ] 真实 DeepSeek API 调用验证 (provider 已可配置, 需用户提供 key)
+- [ ] 真实 WeCom/Server 酱推送 (provider 已可配置, 需用户提供 webhook/send key)
 
 ## 明确不做 / Out of Scope
 
