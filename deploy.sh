@@ -41,13 +41,18 @@ echo "── [4/6] 构建生产包 ──"
 NEXT_PUBLIC_USE_API=true npm run build
 echo ""
 
-# 5. Restart PM2
-echo "── [5/6] 重启服务 ──"
+# 5. Copy static assets (standalone mode)
+echo "── [5/7] 静态资源 ──"
+cp -r .next/static .next/standalone/.next/static
+echo ""
+
+# 6. Restart PM2
+echo "── [6/7] 重启服务 ──"
 pm2 reload ecosystem.config.cjs --update-env
 echo ""
 
-# 6. Health check
-echo "── [6/6] 健康检查 ──"
+# 7. Health check
+echo "── [7/7] 健康检查 ──"
 for i in $(seq 1 $MAX_WAIT); do
   if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
     green "✅ 部署成功 — $(curl -s "$HEALTH_URL" | grep -o '"ok":[^,}]*')"
