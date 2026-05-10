@@ -45,6 +45,9 @@ npm run real-brief:dry-run    # 真实简报演练 (--push 含推送)
 npm run deploy:check       # 部署前安全检查
 npm run prod:smoke          # 生产环境冒烟测试
 npm run enable-real-data    # 启用真实行情数据源 (天天基金+新浪财经)
+npm run deploy              # 一键部署到生产服务器
+npm run test                # 运行单元测试 (vitest)
+npm run test:watch          # 单元测试 (watch 模式)
 ```
 
 ## 技术栈
@@ -65,7 +68,7 @@ src/
   app/                          # 前端页面 (10个路由) + API (35个路由)
   components/                   # 8个分类目录, 60+ 组件
   data/                         # 12个 mock 数据文件
-  lib/                          # format, returns, import-validation, api-client
+  lib/                          # format, returns, import-validation, api-client, import-helpers
   server/                       # db/prisma, api/response, api/validators,
                                 # finance/calculations, finance/mappers
                                 # jobs/ (定时任务), market-data/ (数据源)
@@ -131,21 +134,28 @@ PriceSnapshot, PortfolioSnapshot, InvestorProfile, ImportSession,
 RecognizedImportRow, DailyBrief, AppSettings, ScheduledJob, JobRun, MarketDataSource,
 AiGenerationRun, PushNotification, PasswordCredential, UserSession
 
-## 定时任务和行情数据源 (Phase 8)
+## 定时任务和行情数据源 (Phase 8 + 真实数据源)
 
 - [x] 定时任务框架 (registry/runner/logger)
-- [x] 4个任务: update-market-prices, refresh-holding-snapshots, generate-portfolio-snapshots, run-daily-valuation
+- [x] 7个任务: update-market-prices, refresh-holding-snapshots, generate-portfolio-snapshots, run-daily-valuation, generate-daily-brief, push-daily-brief, run-morning-brief
 - [x] 数据源抽象层 (Mock, Manual, Eastmoney Fund, Sina Finance, Tushare 骨架)
+  - [x] SinaFinanceProvider — 新浪财经免费接口，覆盖 A_SHARE / ETF / US_STOCK
+  - [x] EastmoneyFundProvider — 天天基金免费接口，覆盖 MUTUAL_FUND 净值
+  - [x] 自动按资产类型路由：基金→天天基金，A股/美股→新浪财经
+- [x] 生产行情模式: `MARKET_DATA_MODE=mixed` (Mock/Manual 禁用，真实源优先)
 - [x] CLI 单次执行 + 可选常驻调度器
 - [x] jobs API + market-data API
 - [x] 设置页接入数据源和任务状态
-- [x] Mock/Manual fallback 完整可用
+- [x] Mock/Manual fallback 保留 (DB disabled, provider 兜底)
+- [x] `enable-real-data` 脚本一键启用真实数据源
+- [x] 生产验证: 12/12 资产获取真实行情 (A股/美股/ETF: MARKET_API, 基金: MARKET_API)
 
 ## 部署配置
 
 - docker-compose.yml (PostgreSQL)
 - standalone 输出模式 (next.config.ts)
 - .env.example / .npmrc.example (国内镜像配置)
+- deploy.sh 一键部署脚本
 - docs/architecture/ 部署文档 (阿里云 ECS)
 
 ## 设计规范
@@ -207,10 +217,6 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] 真实 Server 酱推送 (用户已配置 key, 生产验证通过)
   - [ ] 真实 WeCom Bot 推送验证 (用户未配置)
   - [ ] 阿里云百炼真实调用 (骨架已预留)
-- [x] 真实行情数据源接入 (新浪财经 A股/美股 + 天天基金 基金净值)
-  - [x] SinaFinanceProvider (A_SHARE, ETF, US_STOCK)
-  - [x] EastmoneyFundProvider 启用 (MUTUAL_FUND)
-  - [x] enable-real-data 脚本
 - [x] 认证与家庭权限 (Phase 12)
   - [x] 密码哈希 (PBKDF2-SHA512, 10万次迭代)
   - [x] PasswordCredential + UserSession 模型
@@ -281,7 +287,18 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] manual-import:smoke 14/14 通过
   - [ ] 阿里云 OSS 真实上传 (骨架已预留)
   - [ ] 阿里云 OCR 真实调用 (骨架已预留)
+- [x] 真实行情数据源接入 (新浪财经 + 天天基金)
+  - [x] SinaFinanceProvider — 新浪财经免费接口 (A_SHARE/ETF/US_STOCK)
+  - [x] EastmoneyFundProvider 启用 — 天天基金净值 (MUTUAL_FUND)
+  - [x] 行情模式切换: `MARKET_DATA_MODE=mixed` (Mock/Manual 禁用，真实源优先)
+  - [x] 自动资产类型路由: 基金→天天基金, A股/美股/ETF→新浪财经
+  - [x] 生产验证: 12/12 资产获取真实行情，10/12 为 MARKET_API 源
+  - [x] `enable-real-data` 脚本 + DB 数据源管理
+  - [x] 5 个数据源: Mock(f) / Manual(f) / Eastmoney(t) / Sina(t) / Tushare(f)
+  - [x] crontab 环境变量修复 (NODE_ENV + 路径)
+  - [x] run-job.ts 动态 import 修复 (ESM hoisting 环境变量加载顺序)
   - [ ] 真实新闻数据源
+  - [ ] 黄金积存金行情 (暂无免费公开 API)
 
 ## 明确不做 / Out of Scope
 
