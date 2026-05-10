@@ -34,6 +34,7 @@
     "real-providers:smoke": "tsx scripts/real-providers-smoke.ts",
     "real-brief:dry-run": "tsx scripts/real-brief-dry-run.ts",
     "prod:smoke": "tsx scripts/prod-smoke.ts",
+    "deploy": "bash deploy.sh",
     "deploy:check": "tsx scripts/deploy-check.ts",
     "enable-real-data": "tsx scripts/enable-real-market-data.ts",
     "db:backup": "bash scripts/backup-db.sh",

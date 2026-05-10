@@ -71,17 +71,19 @@ export async function resolveProviderForAsset(
     };
   }
 
-  // mixed / real mode：查询 DB 配置
-  const dbSource = await prisma.marketDataSource.findFirst({
+  // mixed / real mode：查询 DB 配置，按优先级排序
+  const dbSources = await prisma.marketDataSource.findMany({
     where: {
       isEnabled: true,
     },
     orderBy: { priority: "asc" },
   });
 
-  if (dbSource && marketMode !== "mock") {
-    const assets = dbSource.supportedAssetTypes as AssetTypeEnum[];
-    if (!assets || assets.length === 0 || assets.includes(asset.type)) {
+  if (dbSources.length > 0 && marketMode !== "mock") {
+    // 遍历所有启用数据源，找到第一个支持该资产类型的真实 provider
+    for (const dbSource of dbSources) {
+      const assets = dbSource.supportedAssetTypes as AssetTypeEnum[];
+      if (assets && assets.length > 0 && !assets.includes(asset.type)) continue;
       const provider = providerMap.get(dbSource.name);
       if (provider && (await provider.isEnabled())) {
         return { provider, sourceName: dbSource.name, fallback: false };

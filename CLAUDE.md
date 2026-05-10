@@ -292,6 +292,75 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
 
 Household 是单家庭容器，不表示 SaaS 多租户。认证仅服务该家庭内部成员。
 
+## Agent 工作流（强制执行）
+
+本项目配置了 architect / coder / finder 三个专用 agent。**所有开发工作必须遵循此流程。**
+
+### 角色
+
+| Agent | 模型 | 用途 |
+|-------|------|------|
+| `architect` | deepseek-v4-pro | 深度分析 + 任务拆解 + 验收整合。**只分析不写代码** |
+| `coder` | deepseek-v4-flash | 接收明确任务包 → 高效实现 → 提交 summary |
+| `finder` | deepseek-v4-flash | 代码搜索 / 定位 / 引用追踪，**只读不改** |
+
+### 强制流程
+
+```
+用户需求
+  ↓
+architect 分析 → 输出 .claude/handoffs/tasks/<id>.md（定位+分析+目标）
+  ↓
+coder 读取任务包 → 实现 → 输出 .claude/handoffs/summaries/<id>.md
+  ↓
+architect 验收 summary → 检查代码 → 告知用户/创建修正任务
+```
+
+### 什么时候触发工作流 → 必须走 architect→coder 流程
+
+| 场景 | 示例 |
+|------|------|
+| 新功能/新页面 | "添加一个资产报告页面" |
+| 跨文件重构 | "把交易计算逻辑抽到 service 层" |
+| 非 trivial bug 修复 | "导入确认后持仓没更新"（需要分析根因） |
+| 架构/方案决策 | "行情数据源要不要加缓存层" |
+
+### 什么时候不触发 → 直接回答或执行
+
+| 场景 | 示例 | 处理方式 |
+|------|------|---------|
+| 纯提问/了解代码 | "这个函数做了什么？" "数据库有几个模型？" | 直接回答 |
+| 解释/教学 | "解释这个文件的逻辑" "Prisma 怎么用？" | 直接回答 |
+| 搜索定位 | "哪里处理了买入逻辑？" | 直接搜或用 **finder** agent |
+| 单文件小改动 | "在这个组件加一个 loading 状态" | 直接改，无需 handoff |
+| Trivial 修复 | typo、配置值、注释修正 | 直接改 |
+
+### 硬规则（触发工作流时）
+
+1. **architect 先分析** — 输出 task handoff 到 `.claude/handoffs/tasks/<id>.md`
+2. **architect 不写代码** — 只产出 handoff，不直接改文件
+3. **coder 不分析需求** — 读 handoff 直接实现，不节外生枝
+4. **必须有 summary** — coder 完成后写入 `.claude/handoffs/summaries/<id>.md`
+5. **architect 验收** — 读 summary + 检查代码，通过才告知用户完成
+
+### Handoff 格式
+
+Task（architect 输出，`.claude/handoffs/tasks/<id>.md`）:
+```
+# Task: <标题>
+## 定位 — 涉及文件/模块/参考代码
+## 分析 — 现状/问题/约束
+## 目标 — 具体成果 + 验收标准
+```
+
+Summary（coder 输出，`.claude/handoffs/summaries/<id>.md`）:
+```
+# Summary: <标题>
+## 改动清单 — 逐一说明
+## 变更文件 — 含行号
+## 自检 — 符合目标/未破坏现有/风格一致
+```
+
 ## 约定
 
 - 中文回复
