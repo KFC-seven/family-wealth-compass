@@ -70,6 +70,11 @@ export async function generateDailyBrief(options: GenerateBriefOptions = {}) {
       const mock = new MockAiProvider();
       output = await mock.generateStructuredBrief(context);
       output = dailyBriefAiOutputSchema.parse(output) as AiBriefOutput;
+      // Safety check for mock fallback
+      const mockSafety = checkSafety(output);
+      if (!mockSafety.passed) {
+        console.warn(`[Brief] Mock AI fallback 安全检查: ${mockSafety.issues.join("; ")}`);
+      }
       console.log(`[Brief] Fallback 到 Mock AI 成功`);
     } catch (mockErr) {
       console.error(`[Brief] Mock fallback 也失败: ${(mockErr as Error).message}`);

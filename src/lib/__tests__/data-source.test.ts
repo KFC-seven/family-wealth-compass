@@ -134,12 +134,9 @@ describe("data-source (mock mode)", () => {
     expect(result.clearedHoldings).toBeInstanceOf(Array);
   });
 
-  it("getMemberById returns first mock member when ID not found (known bug)", async () => {
+  it("getMemberById throws when ID not found", async () => {
     const { getMemberById } = await import("@/lib/data-source");
-    const result = await getMemberById("nonexistent-id");
-    // Known bug: returns first mock member instead of null
-    expect(result.member).toBeDefined();
-    expect(result.member.id).toBe("member-1");
+    await expect(getMemberById("nonexistent-id")).rejects.toThrow("Member not found");
   });
 
   it("exports getHoldingsData, splits current/cleared", async () => {
@@ -163,12 +160,9 @@ describe("data-source (mock mode)", () => {
     expect(result.holding.id).toBe("h-1");
   });
 
-  it("getHoldingById returns first mock holding when ID not found (known bug)", async () => {
+  it("getHoldingById throws when ID not found", async () => {
     const { getHoldingById } = await import("@/lib/data-source");
-    const result = await getHoldingById("nonexistent-id");
-    // Known bug: returns first mock holding instead of null
-    expect(result.holding).toBeDefined();
-    expect(result.holding.id).toBe("h-1");
+    await expect(getHoldingById("nonexistent-id")).rejects.toThrow("Holding not found");
   });
 
   it("exports getDailyBriefData, returns brief in mock mode", async () => {

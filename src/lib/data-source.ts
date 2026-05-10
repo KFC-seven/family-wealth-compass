@@ -263,9 +263,10 @@ export async function getMemberById(memberId: string): Promise<{
 }> {
   if (!USE_API_DATA) {
     const memberMock = mockMembers.find((m) => m.id === memberId);
+    if (!memberMock) throw new Error(`Member not found: ${memberId}`);
     const allHoldings = mockHoldings.filter((h) => h.memberId === memberId);
     return {
-      member: memberMock || mockMembers[0],
+      member: memberMock,
       currentHoldings: allHoldings.filter((h) => !h.isCleared),
       clearedHoldings: allHoldings.filter((h) => h.isCleared),
     };
@@ -283,9 +284,10 @@ export async function getMemberById(memberId: string): Promise<{
   } catch {
     logFallback("getMemberById");
     const memberMock = mockMembers.find((m) => m.id === memberId);
+    if (!memberMock) throw new Error(`Member not found: ${memberId}`);
     const allHoldings = mockHoldings.filter((h) => h.memberId === memberId);
     return {
-      member: memberMock || mockMembers[0],
+      member: memberMock,
       currentHoldings: allHoldings.filter((h) => !h.isCleared),
       clearedHoldings: allHoldings.filter((h) => h.isCleared),
     };
@@ -386,11 +388,8 @@ export async function getHoldingById(holdingId: string): Promise<{
 }> {
   if (!USE_API_DATA) {
     const h = mockHoldings.find((h) => h.id === holdingId);
-    return {
-      holding: h || mockHoldings[0],
-      detail: {},
-      transactions: [],
-    };
+    if (!h) throw new Error(`Holding not found: ${holdingId}`);
+    return { holding: h, detail: {}, transactions: [] };
   }
 
   try {
@@ -401,11 +400,8 @@ export async function getHoldingById(holdingId: string): Promise<{
   } catch {
     logFallback("getHoldingById");
     const h = mockHoldings.find((h) => h.id === holdingId);
-    return {
-      holding: h || mockHoldings[0],
-      detail: {},
-      transactions: [],
-    };
+    if (!h) throw new Error(`Holding not found: ${holdingId}`);
+    return { holding: h, detail: {}, transactions: [] };
   }
 }
 

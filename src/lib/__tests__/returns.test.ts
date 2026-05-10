@@ -55,10 +55,10 @@ describe("calculateHoldingReturn (client)", () => {
 });
 
 describe("calculateHoldingReturnRate", () => {
-  it("valid data", () => { expect(calculateHoldingReturnRate(1000, 5, 5000)).toBe(-1); });
+  it("valid data", () => { expect(calculateHoldingReturnRate(1000, 5, 5000)).toBe(0); });
   it("costBasis=0", () => { expect(calculateHoldingReturnRate(1000, 5, 0)).toBeNull(); });
-  it("qty*avgCost=0", () => { expect(calculateHoldingReturnRate(0, 5, 5000)).toBeNull(); });
-  it("avgCost=0", () => { expect(calculateHoldingReturnRate(1000, 0, 5000)).toBeNull(); });
+  it("currentValue=0, costBasis>0", () => { expect(calculateHoldingReturnRate(0, 5, 5000)).toBe(-1); });
+  it("price=0, costBasis>0", () => { expect(calculateHoldingReturnRate(1000, 0, 5000)).toBe(-1); });
 });
 
 describe("calculateRealizedReturn", () => {
@@ -305,18 +305,18 @@ describe("calculateClearedPositionSummary", () => {
 });
 
 describe("calculateRemainingCostByAverageCost (returns.ts)", () => {
-  it("Buy: quantity DOUBLED due to bug at line 170", () => {
+  it("Buy: correct quantity using average cost", () => {
     const r = calculateRemainingCostByAverageCost(5000, 1000, 2000, null, null);
+    // avgCost = 5000/1000 = 5, addedQty = 2000/5 = 400, newQty = 1400
     expect(r.remainingCost).toBe(7000);
-    // Bug: buyAmount / (buyAmount / previousQuantity) = 2000 / (2000/1000) = 1000
-    // newQty = 1000 + 1000 = 2000 (should be 1400)
-    expect(r.remainingQuantity).toBe(2000);
-    expect(r.newAvgCost).toBe(3.5);
+    expect(r.remainingQuantity).toBe(1400);
+    expect(r.newAvgCost).toBe(5);
   });
   it("Buy with fee", () => {
+    // avgCost = 5, addedQty = (2000+10)/5 = 402, newQty = 1402
     const r = calculateRemainingCostByAverageCost(5000, 1000, 2000, 10, null);
     expect(r.remainingCost).toBe(7010);
-    expect(r.remainingQuantity).toBe(2000);
+    expect(r.remainingQuantity).toBe(1402);
   });
   it("Sell", () => {
     const r = calculateRemainingCostByAverageCost(5000, 1000, null, null, 300);
@@ -342,11 +342,11 @@ describe("calculateRemainingCostByAverageCost (returns.ts)", () => {
     expect(r.remainingQuantity).toBe(0);
     expect(r.newAvgCost).toBeNaN();
   });
-  it("Buy with zero prev qty: Infinity", () => {
+  it("Buy with zero prev qty: no avg cost to derive quantity", () => {
     const r = calculateRemainingCostByAverageCost(0, 0, 500, null, null);
     expect(r.remainingCost).toBe(500);
     expect(r.remainingQuantity).toBe(0);
-    expect(r.newAvgCost).toBe(Infinity);
+    expect(r.newAvgCost).toBe(0);
   });
   it("Sell with zero prev qty", () => {
     const r = calculateRemainingCostByAverageCost(0, 0, null, null, 100);

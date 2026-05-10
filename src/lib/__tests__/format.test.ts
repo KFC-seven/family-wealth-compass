@@ -83,9 +83,8 @@ describe("formatSignedMoney", () => {
     expect(formatSignedMoney(1234.56)).toBe("+¥1,234.56");
   });
 
-  it("prefixes negative value with minus (current: no prefix)", () => {
-    // Current behavior: formatSignedMoney only adds + for positive, nothing for negative
-    expect(formatSignedMoney(-1234.56)).toBe("¥1,234.56");
+  it("prefixes negative value with minus", () => {
+    expect(formatSignedMoney(-1234.56)).toBe("-¥1,234.56");
   });
 
   it("prefixes zero without sign (current behavior)", () => {

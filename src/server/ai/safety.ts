@@ -1,9 +1,9 @@
 import type { AiBriefOutput } from "./types";
 
 const FORBIDDEN_PATTERNS = [
-  /保证收益/g, /必赚/g, /无风险/g, /立即买入/g, /必须买入/g,
-  /必须卖出/g, /满仓/g, /梭哈/g, /无脑加仓/g, /all[-\s]?in/gi,
-  /稳赚/g, /包赚/g, /躺赚/g, /翻倍/g,
+  /保证收益/, /必赚/, /无风险/, /立即买入/, /必须买入/,
+  /必须卖出/, /满仓/, /梭哈/, /无脑加仓/, /all[-\s]?in/i,
+  /稳赚/, /包赚/, /躺赚/, /翻倍/,
 ];
 
 const REQUIRED_DISCLAIMER = "不构成确定性投资指令";

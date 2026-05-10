@@ -28,7 +28,7 @@ export function formatCompactMoney(value: number, currency = "CNY"): string {
 
 export function formatSignedMoney(value: number, currency = "CNY"): string {
   const symbol = currency === "CNY" ? CURRENCY_SYMBOL : "$";
-  const prefix = value > 0 ? "+" : "";
+  const prefix = value > 0 ? "+" : value < 0 ? "-" : "";
   const formatted = Math.abs(value).toLocaleString("zh-CN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -39,7 +39,8 @@ export function formatSignedMoney(value: number, currency = "CNY"): string {
 export function formatPercent(value: number | null): string {
   if (value === null || value === undefined) return "--";
   const prefix = value > 0 ? "+" : "";
-  return `${prefix}${(value * 100).toFixed(2)}%`;
+  const pct = value * 100;
+  return `${prefix}${pct.toFixed(2)}%`;
 }
 
 export function formatDate(dateStr: string): string {

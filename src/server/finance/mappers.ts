@@ -145,7 +145,7 @@ export function mapApiDailyBriefToViewModel(
   date: string
 ): BriefViewModel {
   const parseJson = (field: unknown): unknown => {
-    if (typeof field === "string") try { return JSON.parse(field); } catch { return field; }
+    if (typeof field === "string") try { return JSON.parse(field); } catch { return {}; }
     return field || {};
   };
 

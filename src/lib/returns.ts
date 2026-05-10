@@ -4,9 +4,11 @@ export function calculateHoldingReturn(quantity: number, currentPrice: number, a
   return quantity * currentPrice - quantity * avgCost;
 }
 
-export function calculateHoldingReturnRate(quantity: number, avgCost: number, costBasis: number): number | null {
+export function calculateHoldingReturnRate(quantity: number, currentPrice: number, costBasis: number): number | null {
   if (costBasis === 0) return null;
-  return (quantity * avgCost === 0) ? null : ((quantity * avgCost - costBasis) / costBasis - 1);
+  const currentValue = quantity * currentPrice;
+  if (currentValue === 0 && costBasis === 0) return null;
+  return (currentValue - costBasis) / costBasis;
 }
 
 export function calculateRealizedReturn(transactions: Transaction[]): number {
@@ -167,8 +169,10 @@ export function calculateRemainingCostByAverageCost(
 ): { remainingCost: number; remainingQuantity: number; newAvgCost: number } {
   if (buyAmount !== null) {
     const newCost = previousCost + buyAmount + (buyFee || 0);
-    const newQty = previousQuantity + (buyAmount / (buyAmount / previousQuantity));
-    // Simplified: real calc uses price
+    const avgCost = previousQuantity > 0 ? previousCost / previousQuantity : 0;
+    const addedQuantity = avgCost > 0 ? (buyAmount + (buyFee || 0)) / avgCost : 0;
+    const newQty = previousQuantity + addedQuantity;
+    if (newQty <= 0) return { remainingCost: newCost, remainingQuantity: 0, newAvgCost: 0 };
     return { remainingCost: newCost, remainingQuantity: newQty, newAvgCost: newCost / newQty };
   }
   if (sellQuantity !== null) {
