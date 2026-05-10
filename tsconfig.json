@@ -38,6 +38,10 @@
   "exclude": [
     "node_modules",
     "prisma",
-    "pgsql"
+    "pgsql",
+    "vitest.config.ts",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }
