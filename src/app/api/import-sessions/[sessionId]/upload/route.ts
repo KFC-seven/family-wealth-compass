@@ -15,15 +15,6 @@ export async function POST(
       return createErrorResponse({ code: "UPLOAD_DISABLED", message: "上传功能未启用，请设置 UPLOAD_ENABLED=true" }, 400);
     }
 
-    // Secret 检查
-    const secret = process.env.UPLOAD_API_SECRET;
-    if (secret) {
-      const provided = req.headers.get("x-upload-api-secret");
-      if (provided !== secret) {
-        return createErrorResponse({ code: "UNAUTHORIZED", message: "UPLOAD_API_SECRET 校验失败" }, 401);
-      }
-    }
-
     const session = await prisma.importSession.findUnique({ where: { id: sessionId } });
     if (!session) return createErrorResponse({ code: "NOT_FOUND", message: "会话不存在" }, 404);
 

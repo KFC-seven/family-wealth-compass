@@ -112,16 +112,15 @@ describe("POST /api/import-sessions/[sessionId]/upload", () => {
     expect(body.error.code).toBe("UPLOAD_DISABLED");
   });
 
-  it("returns 401 when UPLOAD_API_SECRET set and mismatched", async () => {
+  it("no longer rejects when UPLOAD_API_SECRET is set (auth middleware protects)", async () => {
     process.env.UPLOAD_ENABLED = "true";
     process.env.UPLOAD_API_SECRET = "my-secret";
     const res = await UploadPOST(new Request("http://localhost", {
       method: "POST",
       headers: { "x-upload-api-secret": "wrong" },
     }), { params: Promise.resolve({ sessionId: "is-001" }) });
-    expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.error.code).toBe("UNAUTHORIZED");
+    // Secret header is no longer checked — request proceeds to file validation
+    expect(res.status).toBe(404);
   });
 
   it("returns 404 when session not found", async () => {
@@ -409,14 +408,16 @@ describe("POST /api/import-sessions/[sessionId]/confirm", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns 401 when UPLOAD_API_SECRET set and mismatched", async () => {
+  it("no longer rejects when UPLOAD_API_SECRET set (auth middleware protects)", async () => {
     process.env.UPLOAD_API_SECRET = "my-secret";
-    mockPrisma.importSession.findUnique.mockResolvedValue({ id: "is-001" } as any);
+    mockPrisma.importSession.findUnique.mockResolvedValue({ id: "is-001", saveMode: "HOLDING_SNAPSHOT", householdId: "hh-1" } as any);
+    mockPrisma.recognizedImportRow.findMany.mockResolvedValue([]);
     const res = await ConfirmPOST(mockRequest("http://localhost", {
       method: "POST", body: {},
       headers: { "x-upload-api-secret": "wrong" },
     }), { params: Promise.resolve({ sessionId: "is-001" }) });
-    expect(res.status).toBe(401);
+    // Secret is no longer checked — request proceeds to save
+    expect(res.status).toBe(200);
   });
 
   it("returns 200 with savedCount for HOLDING_SNAPSHOT mode", async () => {

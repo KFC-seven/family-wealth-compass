@@ -20,15 +20,6 @@ export async function POST(
     });
     if (!session) return createErrorResponse({ code: "NOT_FOUND", message: "会话不存在" }, 404);
 
-    // Upload API secret
-    const secret = process.env.UPLOAD_API_SECRET;
-    if (secret) {
-      const provided = req.headers.get("x-upload-api-secret");
-      if (provided !== secret) {
-        return createErrorResponse({ code: "UNAUTHORIZED", message: "UPLOAD_API_SECRET 校验失败" }, 401);
-      }
-    }
-
     const body = await req.json();
     const saveMode = body.saveMode ?? session.saveMode;
 
