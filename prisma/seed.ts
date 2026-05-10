@@ -225,6 +225,7 @@ async function main() {
     { name: "mock", display: "Mock 数据源", type: "MOCK" as const, pri: 10, assets: JSON.parse('["CASH","A_SHARE","US_STOCK","ETF","MUTUAL_FUND","BANK_WEALTH","GOLD_ACCUMULATION","BOND","OTHER"]') },
     { name: "manual", display: "手动价格", type: "MANUAL" as const, pri: 20, assets: JSON.parse('["CASH","A_SHARE","US_STOCK","ETF","MUTUAL_FUND","BANK_WEALTH","GOLD_ACCUMULATION","BOND","OTHER"]') },
     { name: "eastmoney-fund", display: "天天基金", type: "EASTMONEY" as const, pri: 30, assets: JSON.parse('["MUTUAL_FUND"]'), enabled: false, status: "DISABLED" as const },
+    { name: "sina-finance", display: "新浪财经", type: "OTHER" as const, pri: 35, assets: JSON.parse('["A_SHARE","ETF","US_STOCK"]'), enabled: false, status: "DISABLED" as const },
     { name: "tushare", display: "Tushare Pro", type: "TUSHARE" as const, pri: 40, assets: JSON.parse('["A_SHARE","ETF","MUTUAL_FUND"]'), enabled: false, status: "DISABLED" as const },
   ];
   for (const sc of sourceConfigs) {

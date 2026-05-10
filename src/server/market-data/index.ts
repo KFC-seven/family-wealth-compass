@@ -6,3 +6,4 @@ export { MockMarketDataProvider } from "./providers/mock-provider";
 export { ManualPriceProvider } from "./providers/manual-provider";
 export { EastmoneyFundProvider } from "./providers/eastmoney-fund-provider";
 export { TushareProvider } from "./providers/tushare-provider";
+export { SinaFinanceProvider } from "./providers/sina-finance-provider";

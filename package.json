@@ -35,6 +35,7 @@
     "real-brief:dry-run": "tsx scripts/real-brief-dry-run.ts",
     "prod:smoke": "tsx scripts/prod-smoke.ts",
     "deploy:check": "tsx scripts/deploy-check.ts",
+    "enable-real-data": "tsx scripts/enable-real-market-data.ts",
     "db:backup": "bash scripts/backup-db.sh",
     "db:restore": "bash scripts/restore-db.sh",
     "job:update-prices": "tsx scripts/run-job.ts update-market-prices",

@@ -10,6 +10,7 @@ import { MockMarketDataProvider } from "./providers/mock-provider";
 import { ManualPriceProvider } from "./providers/manual-provider";
 import { EastmoneyFundProvider } from "./providers/eastmoney-fund-provider";
 import { TushareProvider } from "./providers/tushare-provider";
+import { SinaFinanceProvider } from "./providers/sina-finance-provider";
 import { ProviderUnavailableError } from "./errors";
 import { prisma } from "@/server/db/prisma";
 
@@ -24,6 +25,7 @@ function initProviders() {
     new ManualPriceProvider(),
     new EastmoneyFundProvider(),
     new TushareProvider(),
+    new SinaFinanceProvider(),
   ];
 
   for (const p of providers) {

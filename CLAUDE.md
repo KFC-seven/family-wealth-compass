@@ -44,6 +44,7 @@ npm run real-providers:smoke # 真实 Provider 测试 (无 key 时 SKIP)
 npm run real-brief:dry-run    # 真实简报演练 (--push 含推送)
 npm run deploy:check       # 部署前安全检查
 npm run prod:smoke          # 生产环境冒烟测试
+npm run enable-real-data    # 启用真实行情数据源 (天天基金+新浪财经)
 ```
 
 ## 技术栈
@@ -134,7 +135,7 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
 
 - [x] 定时任务框架 (registry/runner/logger)
 - [x] 4个任务: update-market-prices, refresh-holding-snapshots, generate-portfolio-snapshots, run-daily-valuation
-- [x] 数据源抽象层 (Mock, Manual, Eastmoney Fund, Tushare 骨架)
+- [x] 数据源抽象层 (Mock, Manual, Eastmoney Fund, Sina Finance, Tushare 骨架)
 - [x] CLI 单次执行 + 可选常驻调度器
 - [x] jobs API + market-data API
 - [x] 设置页接入数据源和任务状态
@@ -206,6 +207,10 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] 真实 Server 酱推送 (用户已配置 key, 生产验证通过)
   - [ ] 真实 WeCom Bot 推送验证 (用户未配置)
   - [ ] 阿里云百炼真实调用 (骨架已预留)
+- [x] 真实行情数据源接入 (新浪财经 A股/美股 + 天天基金 基金净值)
+  - [x] SinaFinanceProvider (A_SHARE, ETF, US_STOCK)
+  - [x] EastmoneyFundProvider 启用 (MUTUAL_FUND)
+  - [x] enable-real-data 脚本
 - [x] 认证与家庭权限 (Phase 12)
   - [x] 密码哈希 (PBKDF2-SHA512, 10万次迭代)
   - [x] PasswordCredential + UserSession 模型
