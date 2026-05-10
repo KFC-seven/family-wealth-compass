@@ -9,6 +9,7 @@ node_modules
 pgdata/
 pgsql/
 *.log
+tsconfig.tsbuildinfo
 dist/
 .turbo/
 prompt_*.txt

@@ -1,9 +1,20 @@
-export type ImportSource = "alipay" | "broker" | "bank";
+export type ImportSource = "alipay" | "broker" | "bank" | "manual" | "batch_paste";
 
 export const IMPORT_SOURCE_LABELS: Record<ImportSource, string> = {
   alipay: "支付宝",
   broker: "券商 App",
   bank: "银行 App",
+  manual: "手动录入",
+  batch_paste: "批量粘贴",
+};
+
+export type ImportMode = "ocr" | "manual_holding" | "manual_transaction" | "batch_paste";
+
+export const IMPORT_MODE_LABELS: Record<ImportMode, string> = {
+  ocr: "截图识别导入",
+  manual_holding: "手动录入持仓",
+  manual_transaction: "手动录入交易",
+  batch_paste: "批量粘贴",
 };
 
 export type ImportSaveMode = "holding_snapshot" | "transaction";
@@ -14,6 +25,27 @@ export const IMPORT_SAVE_MODE_LABELS: Record<ImportSaveMode, string> = {
 };
 
 export type RecognitionRowStatus = "normal" | "low_confidence" | "missing_field" | "duplicate" | "pending_confirm";
+
+export type TransactionType =
+  | "BUY"
+  | "SELL"
+  | "DIVIDEND"
+  | "INTEREST"
+  | "DEPOSIT"
+  | "WITHDRAW"
+  | "FEE"
+  | "ADJUSTMENT";
+
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+  BUY: "买入",
+  SELL: "卖出",
+  DIVIDEND: "分红",
+  INTEREST: "利息",
+  DEPOSIT: "入金",
+  WITHDRAW: "出金",
+  FEE: "费用",
+  ADJUSTMENT: "调整",
+};
 
 export type RecognizedField = {
   value: string;
@@ -31,6 +63,7 @@ export interface RecognizedAssetRow {
     assetCode: RecognizedField;
     assetType: RecognizedField;
     currency: RecognizedField;
+    market: RecognizedField;
     quantity: RecognizedField;
     price: RecognizedField;
     marketValue: RecognizedField;
@@ -40,6 +73,15 @@ export interface RecognizedAssetRow {
     cashBalance: RecognizedField;
     dataDate: RecognizedField;
     note: RecognizedField;
+    // 交易字段
+    transactionType: RecognizedField;
+    tradeDate: RecognizedField;
+    grossAmount: RecognizedField;
+    fee: RecognizedField;
+    tax: RecognizedField;
+    netAmount: RecognizedField;
+    cashImpact: RecognizedField;
+    realizedReturn: RecognizedField;
   };
   status: RecognitionRowStatus;
   issues: string[];
@@ -63,6 +105,7 @@ export interface ImportSession {
   validationIssues: ImportValidationIssue[];
   saveMode: ImportSaveMode;
   result?: ImportResult;
+  mode: ImportMode;
 }
 
 export interface ImportResult {

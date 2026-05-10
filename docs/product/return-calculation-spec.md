@@ -396,6 +396,13 @@ Effects:
 - Decrease cash if cash account is linked
 - Fee increases cost unless recorded separately
 
+**Manual import (Phase 18) implementation**:
+- Holding quantity += buyQty
+- Holding remainingCost += 买入净成本 (netAmount = grossAmount - fee - tax)
+- 平均成本法重算: averageCost = remainingCost / quantity
+- cashImpact = -(netAmount)（资金流出，现金减少）
+- realizedReturn = 0（买入不产生已实现收益）
+
 ### 12.2 SELL
 
 Effects:
@@ -405,6 +412,14 @@ Effects:
 - Increase cash
 - Generate realized return
 - Fee and tax reduce realized return
+
+**Manual import (Phase 18) implementation**:
+- 平均成本法: soldCost = averageCost × sellQty
+- realizedReturn = netAmount - soldCost
+- Holding quantity -= sellQty, remainingCost -= soldCost
+- cashImpact = netAmount（资金流入，现金增加）
+- 如果 quantity 变为 0: status = CLEARED, marketValue = 0, holdingReturn = 0, clearedAt = tradeDate
+- 已清仓持仓保留 realizedReturn 和 cumulativeReturn
 
 ### 12.3 DIVIDEND
 
@@ -420,12 +435,22 @@ Reinvested dividend:
 - Increase quantity
 - Increase cost basis according to reinvestment record
 
+**Manual import (Phase 18) implementation**:
+- realizedReturn += netAmount（计入已实现收益）
+- cashImpact = netAmount（资金流入）
+- 更新 Holding: realizedReturn += netAmount, cumulativeReturn += netAmount
+
 ### 12.4 INTEREST
 
 Effects:
 
 - Increase cash
 - Increase realized return
+
+**Manual import (Phase 18) implementation**:
+- 同 DIVIDEND
+- realizedReturn += netAmount
+- cashImpact = netAmount
 
 ### 12.5 DEPOSIT
 
@@ -435,6 +460,11 @@ Effects:
 - Increase external invested capital
 - Not return
 
+**Manual import (Phase 18) implementation**:
+- realizedReturn = 0（**不计入收益**）
+- cashImpact = netAmount（资金流入）
+- 作为外部现金流记录，不影响任何收益指标
+
 ### 12.6 WITHDRAW
 
 Effects:
@@ -443,12 +473,22 @@ Effects:
 - Decrease net invested capital
 - Not return
 
+**Manual import (Phase 18) implementation**:
+- realizedReturn = 0（**不计入收益**）
+- cashImpact = -netAmount（资金流出）
+- 作为外部现金流记录
+
 ### 12.7 FEE
 
 Effects:
 
 - Decrease cash or increase cost depending on context
 - Reduce return if not already included in buy or sell
+
+**Manual import (Phase 18) implementation**:
+- realizedReturn = -fee（减少已实现收益）
+- cashImpact = -fee（资金流出）
+- 更新 Holding: realizedReturn -= fee, cumulativeReturn -= fee
 
 ### 12.8 ADJUSTMENT
 
@@ -457,6 +497,12 @@ Effects:
 - Manual correction
 - Must require note or reason
 - Should be visually marked as manual adjustment
+
+**Manual import (Phase 18) implementation**:
+- **必须填写备注 (note)**，否则保存时跳过该行
+- realizedReturn = 0（不自动推断收益）
+- cashImpact = 用户指定的值（如有）
+- 不要静默影响收益，必须有人工备注记录
 
 ## 13. Example
 
@@ -513,6 +559,33 @@ Cumulative return:
 ```txt
 ¥790 + ¥600 = ¥1,390
 ```
+
+## 13.1 CLEARED 持仓规则 (Phase 18)
+
+当 SELL 后 Holding quantity 变为 0 时，持仓标记为 CLEARED：
+
+```txt
+status = CLEARED
+quantity = 0
+currentMarketValue = 0
+holdingReturn = 0
+clearedAt = tradeDate (最后一次卖出日期)
+```
+
+**保留字段**：
+- realizedReturn — 保留历史已实现收益
+- cumulativeReturn — 保留历史累计收益 (= realizedReturn, 因 holdingReturn = 0)
+
+**不保留字段**：
+- holdingReturn — 清仓后无持仓收益
+- currentMarketValue — 市值为 0
+- averageCost / remainingCost — 清仓后无剩余成本
+
+**摘要统计中的已清仓**：
+- 成员总资产的已实现收益包含已清仓持仓的 realizedReturn
+- 成员累计收益包含已清仓持仓的 cumulativeReturn
+- 已清仓持仓不贡献市值和持仓收益
+- 已清仓持仓不显示在"当前持仓"列表，但出现在"已清仓"标签页
 
 ## 14. Display Rules
 

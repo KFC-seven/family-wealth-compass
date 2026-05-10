@@ -1,7 +1,17 @@
 import { prisma } from "@/server/db/prisma";
 import { createSuccessResponse, createErrorResponse, handleApiError } from "@/server/api/response";
 
-/** 手动新增一行 */
+const ROW_FIELDS = [
+  "memberId", "accountId", "assetName", "assetCode", "assetType",
+  "currency", "market", "quantity", "price", "marketValue", "cost",
+  "holdingReturn", "dataDate", "confidence", "status", "action",
+  "rawText", "normalizedText", "note", "validationIssues",
+  // transaction fields
+  "transactionType", "tradeDate", "grossAmount", "fee", "tax",
+  "netAmount", "cashImpact", "realizedReturn",
+] as const;
+
+/** 手动新增一行或批量多行 */
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ sessionId: string }> },
@@ -13,43 +23,58 @@ export async function POST(
 
     const body = await req.json();
 
+    // 支持批量: { rows: [...] }
+    const entries = Array.isArray(body.rows) ? body.rows : [body];
+    if (entries.length === 0) {
+      return createErrorResponse({ code: "VALIDATION_ERROR", message: "rows 不能为空" }, 400);
+    }
+
     // 计算当前最大 rowIndex
     const maxRow = await prisma.recognizedImportRow.findFirst({
       where: { importSessionId: sessionId },
       orderBy: { rowIndex: "desc" as const },
     });
-    const nextIndex = (maxRow?.rowIndex ?? 0) + 1;
+    let nextIndex = (maxRow?.rowIndex ?? 0);
 
-    const row = await prisma.recognizedImportRow.create({
-      data: {
+    const createdIds: string[] = [];
+
+    for (const entry of entries) {
+      nextIndex++;
+
+      const data: Record<string, unknown> = {
         importSessionId: sessionId,
         rowIndex: nextIndex,
-        sourcePlatform: session.sourcePlatform,
-        memberId: body.memberId ?? null,
-        accountId: body.accountId ?? null,
-        assetName: body.assetName ?? "",
-        assetCode: body.assetCode ?? null,
-        assetType: body.assetType ?? "OTHER",
-        currency: body.currency ?? "CNY",
-        quantity: body.quantity ?? null,
-        price: body.price ?? null,
-        marketValue: body.marketValue ?? null,
-        cost: body.cost ?? null,
-        holdingReturn: body.holdingReturn ?? null,
-        dataDate: body.dataDate ? new Date(body.dataDate) : null,
-        confidence: 100,
-        status: "CONFIRMED",
-        action: body.action ?? "MANUAL",
-        note: body.note ?? null,
-      },
-    });
+        sourcePlatform: entry.sourcePlatform ?? session.sourcePlatform,
+        confidence: entry.confidence ?? 100,
+        assetName: entry.assetName ?? "",
+        assetType: entry.assetType ?? "OTHER",
+      };
+
+      for (const f of ROW_FIELDS) {
+        if (f in entry && entry[f] !== undefined) {
+          if (f === "dataDate" || f === "tradeDate") {
+            data[f] = entry[f] ? new Date(entry[f] as string) : null;
+          } else if (["quantity", "price", "marketValue", "cost", "holdingReturn", "grossAmount", "fee", "tax", "netAmount", "cashImpact", "realizedReturn"].includes(f)) {
+            data[f] = entry[f] != null ? parseFloat(String(entry[f])) : null;
+          } else {
+            data[f] = entry[f];
+          }
+        }
+      }
+
+      const row = await prisma.recognizedImportRow.create({ data: data as any });
+      createdIds.push(row.id);
+    }
 
     await prisma.importSession.update({
       where: { id: sessionId },
-      data: { recognizedRowCount: { increment: 1 } },
+      data: { recognizedRowCount: { increment: entries.length } },
     });
 
-    return createSuccessResponse({ id: row.id }, 201);
+    return createSuccessResponse(
+      entries.length === 1 ? { id: createdIds[0] } : { ids: createdIds, count: createdIds.length },
+      201,
+    );
   } catch (err) {
     return handleApiError(err);
   }

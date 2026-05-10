@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -26,6 +27,7 @@
     "setup:local": "npm run db:up && npm run db:wait && npm run db:generate && npm run db:push && npm run db:seed",
     "api:smoke": "tsx scripts/api-smoke.ts",
     "import:smoke": "tsx scripts/import-smoke.ts",
+    "manual-import:smoke": "tsx scripts/manual-import-smoke.ts",
     "brief:smoke": "tsx scripts/brief-smoke.ts",
     "auth:smoke": "tsx scripts/auth-smoke.ts",
     "providers:doctor": "tsx scripts/providers-doctor.ts",
@@ -76,6 +78,7 @@
     "postcss": "^8.5.12",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   }
 }

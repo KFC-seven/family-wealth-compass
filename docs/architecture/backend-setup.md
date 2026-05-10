@@ -100,6 +100,13 @@ npm run scheduler:start              # 常驻调度器（开发用）
 ```bash
 # 需要 dev server 在运行
 npm run api:smoke
+
+# Service-level 测试（不需要 dev server，直接访问 DB）
+npm run import:smoke          # 截图 OCR 导入链路
+npm run manual-import:smoke   # 手动导入链路 (Phase 18)
+npm run brief:smoke           # AI 简报 + 推送链路
+npm run auth:smoke            # 认证链路
+npm run providers:doctor      # Provider 配置诊断
 ```
 
 ## 本地完整验证流程
@@ -122,9 +129,44 @@ npm run api:smoke
 
 # 6. 导入链路测试（不需要 dev server）
 npm run import:smoke
+npm run manual-import:smoke
 
-# 6. 构建验证
+# 7. 构建验证
 npm run build
+```
+
+## 手动导入链路验证 (Phase 18)
+
+### 前置条件
+- PostgreSQL 运行中
+- `npm run db:push` 已执行（schema 包含 MANUAL/BATCH_PASTE）
+
+### 测试顺序
+```bash
+# 1. 数据库诊断
+npm run db:doctor
+
+# 2. OCR 导入链路（确认未破坏）
+npm run import:smoke
+
+# 3. 手动导入链路（Phase 18 核心）
+npm run manual-import:smoke
+```
+
+### manual-import:smoke 测试覆盖
+1. 创建 MANUAL + HOLDING_SNAPSHOT session
+2. 批量新增持仓行
+3. 编辑持仓行
+4. confirm 保存持仓快照 → 验证 Asset/Holding/PriceSnapshot
+5. 创建 MANUAL + TRANSACTION_RECORD session
+6. BUY 保存 → 验证 quantity/remainingCost 增加
+7. SELL 保存 → 验证 quantity 减少, realizedReturn 计算
+8. DEPOSIT 保存 → 验证 realizedReturn = 0
+9. DIVIDEND 保存 → 验证 realizedReturn > 0
+
+### 期望输出
+```
+✅ Manual import smoke test 全部通过
 ```
 
 ## 环境变量说明

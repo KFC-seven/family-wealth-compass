@@ -1,9 +1,13 @@
 import { prisma } from "@/server/db/prisma";
 import { createSuccessResponse, createErrorResponse, handleApiError } from "@/server/api/response";
+import { confirmTransactionRecords } from "@/server/import/transaction-saver";
 
 /**
  * 确认保存导入结果。
  * 支持 HOLDING_SNAPSHOT 和 TRANSACTION_RECORD 两种模式。
+ *
+ * Phase 18: TRANSACTION_RECORD 完善支持全部 8 种交易类型
+ * （BUY/SELL/DIVIDEND/INTEREST/DEPOSIT/WITHDRAW/FEE/ADJUSTMENT）
  */
 export async function POST(
   req: Request,
@@ -43,13 +47,8 @@ export async function POST(
     if (saveMode === "HOLDING_SNAPSHOT") {
       for (const row of rows) {
         try {
-          // 跳过无资产名的行
-          if (!row.assetName?.trim()) {
-            ignoreCount++;
-            continue;
-          }
+          if (!row.assetName?.trim()) { ignoreCount++; continue; }
 
-          // 1. 查找或创建 Asset
           let asset = await prisma.asset.findFirst({
             where: row.assetCode
               ? { type: row.assetType as any, code: row.assetCode }
@@ -61,54 +60,36 @@ export async function POST(
               data: {
                 name: row.assetName,
                 code: row.assetCode ?? null,
-                type: row.assetType as any ?? "OTHER",
+                type: (row.assetType as any) ?? "OTHER",
                 currency: row.currency ?? "CNY",
+                market: row.market ?? null,
               },
             });
           }
 
-          // 2. 查找或创建 Holding
           const householdId = session.householdId;
 
-          // 查找 member (按名字匹配)
           let memberId: string | null = row.memberId;
           if (!memberId) {
             const m = await prisma.member.findFirst({ where: { householdId } });
             memberId = m?.id ?? null;
           }
+          if (!memberId) { ignoreCount++; continue; }
 
-          if (!memberId) {
-            ignoreCount++;
-            continue;
-          }
-
-          // 查找 account
           let accountId: string | null = row.accountId;
           if (!accountId) {
-            const acc = await prisma.account.findFirst({
-              where: { memberId, householdId },
-            });
+            const acc = await prisma.account.findFirst({ where: { memberId, householdId } });
             accountId = acc?.id ?? null;
           }
-
-          if (!accountId) {
-            ignoreCount++;
-            continue;
-          }
+          if (!accountId) { ignoreCount++; continue; }
 
           const qty = row.quantity ? parseFloat(row.quantity.toString()) : 0;
           const price = row.price ? parseFloat(row.price.toString()) : 0;
           const mv = row.marketValue ? parseFloat(row.marketValue.toString()) : qty * price;
           const cost = row.cost ? parseFloat(row.cost.toString()) : 0;
 
-          // 查找现有 CURRENT Holding
           const existing = await prisma.holding.findFirst({
-            where: {
-              memberId,
-              accountId,
-              assetId: asset.id,
-              status: "CURRENT",
-            },
+            where: { memberId, accountId, assetId: asset.id, status: "CURRENT" },
           });
 
           if (existing) {
@@ -120,11 +101,12 @@ export async function POST(
                 currentMarketValue: mv,
                 remainingCost: cost > 0 ? cost : undefined,
                 holdingReturn: mv - cost,
-                cumulativeReturn: mv - cost + parseFloat(existing.realizedReturn.toString()),
+                cumulativeReturn: (mv - cost) + parseFloat(existing.realizedReturn.toString()),
                 latestPriceDate: row.dataDate ?? new Date(),
               },
             });
           } else {
+            const avgCost = qty > 0 ? cost / qty : 0;
             await prisma.holding.create({
               data: {
                 householdId,
@@ -136,7 +118,7 @@ export async function POST(
                 currentPrice: price,
                 currentMarketValue: mv,
                 remainingCost: cost,
-                averageCost: qty > 0 ? cost / qty : 0,
+                averageCost: avgCost,
                 holdingReturn: mv - cost,
                 realizedReturn: 0,
                 cumulativeReturn: mv - cost,
@@ -145,19 +127,13 @@ export async function POST(
             });
           }
 
-          // 3. 写入 PriceSnapshot
           if (price > 0) {
             const priceDate = row.dataDate ?? new Date();
+            const dateOnly = new Date(priceDate.toISOString().slice(0, 10));
             await prisma.priceSnapshot.upsert({
-              where: { assetId_date: { assetId: asset.id, date: priceDate } },
+              where: { assetId_date: { assetId: asset.id, date: dateOnly } },
               update: { price, currency: row.currency ?? "CNY", source: "IMPORT" },
-              create: {
-                assetId: asset.id,
-                date: priceDate,
-                price,
-                currency: row.currency ?? "CNY",
-                source: "IMPORT",
-              },
+              create: { assetId: asset.id, date: dateOnly, price, currency: row.currency ?? "CNY", source: "IMPORT" },
             });
           }
 
@@ -169,45 +145,9 @@ export async function POST(
     }
 
     if (saveMode === "TRANSACTION_RECORD") {
-      // 基础交易保存结构
-      const defaultType = body.defaultTransactionType ?? "BUY";
-      const householdId = session.householdId;
-
-      for (const row of rows) {
-        try {
-          if (!row.assetName?.trim()) { ignoreCount++; continue; }
-          const m = await prisma.member.findFirst({ where: { householdId } });
-          if (!m) { ignoreCount++; continue; }
-          const acc = await prisma.account.findFirst({ where: { memberId: m.id } });
-          if (!acc) { ignoreCount++; continue; }
-
-          const netAmount = row.marketValue
-            ? parseFloat(row.marketValue.toString())
-            : row.price
-              ? parseFloat(row.price.toString()) * (row.quantity ? parseFloat(row.quantity.toString()) : 1)
-              : 0;
-
-          await prisma.transaction.create({
-            data: {
-              householdId,
-              memberId: m.id,
-              accountId: acc.id,
-              type: defaultType as any,
-              tradeDate: row.dataDate ?? new Date(),
-              quantity: row.quantity ? parseFloat(row.quantity.toString()) : null,
-              price: row.price ? parseFloat(row.price.toString()) : null,
-              grossAmount: netAmount,
-              netAmount,
-              currency: row.currency ?? "CNY",
-              source: "IMPORT",
-              note: row.note ?? undefined,
-            },
-          });
-          savedCount++;
-        } catch {
-          ignoreCount++;
-        }
-      }
+      const result = await confirmTransactionRecords(session.householdId, rows);
+      savedCount = result.savedCount;
+      ignoreCount = result.ignoreCount;
     }
 
     // 更新 session

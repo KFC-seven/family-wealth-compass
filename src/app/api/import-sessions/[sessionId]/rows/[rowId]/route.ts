@@ -1,7 +1,12 @@
 import { prisma } from "@/server/db/prisma";
 import { createSuccessResponse, createErrorResponse, handleApiError } from "@/server/api/response";
 
-/** 编辑识别行 */
+const NUMERIC_FIELDS = [
+  "quantity", "price", "marketValue", "cost", "holdingReturn",
+  "grossAmount", "fee", "tax", "netAmount", "cashImpact", "realizedReturn",
+];
+
+/** 编辑识别行（支持 OCR 行和手动行） */
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ sessionId: string; rowId: string }> },
@@ -14,26 +19,43 @@ export async function PATCH(
     }
 
     const body = await req.json();
+
+    const data: Record<string, unknown> = {};
+
+    const stringFields = [
+      "memberId", "accountId", "assetName", "assetCode", "assetType",
+      "currency", "market", "status", "action", "rawText", "normalizedText",
+      "note", "transactionType",
+    ];
+    for (const f of stringFields) {
+      if (f in body) data[f] = body[f];
+    }
+
+    for (const f of NUMERIC_FIELDS) {
+      if (f in body) {
+        data[f] = body[f] != null ? parseFloat(String(body[f])) : null;
+      }
+    }
+
+    if ("dataDate" in body) {
+      data.dataDate = body.dataDate ? new Date(body.dataDate) : null;
+    }
+    if ("tradeDate" in body) {
+      data.tradeDate = body.tradeDate ? new Date(body.tradeDate) : null;
+    }
+    if ("quantity" in body && body.quantity !== undefined) {
+      data.quantity = body.quantity != null ? parseFloat(String(body.quantity)) : null;
+    }
+    if ("validationIssues" in body) {
+      data.validationIssues = body.validationIssues;
+    }
+    if ("fieldConfidences" in body) {
+      data.fieldConfidences = body.fieldConfidences;
+    }
+
     const updated = await prisma.recognizedImportRow.update({
       where: { id: rowId },
-      data: {
-        memberId: body.memberId !== undefined ? body.memberId : undefined,
-        accountId: body.accountId !== undefined ? body.accountId : undefined,
-        assetName: body.assetName,
-        assetCode: body.assetCode,
-        assetType: body.assetType,
-        currency: body.currency,
-        quantity: body.quantity !== undefined ? (body.quantity != null ? parseFloat(body.quantity) : null) : undefined,
-        price: body.price !== undefined ? (body.price != null ? parseFloat(body.price) : null) : undefined,
-        marketValue: body.marketValue !== undefined ? (body.marketValue != null ? parseFloat(body.marketValue) : null) : undefined,
-        cost: body.cost !== undefined ? (body.cost != null ? parseFloat(body.cost) : null) : undefined,
-        holdingReturn: body.holdingReturn !== undefined ? (body.holdingReturn != null ? parseFloat(body.holdingReturn) : null) : undefined,
-        dataDate: body.dataDate ? new Date(body.dataDate) : undefined,
-        status: body.status ?? "CONFIRMED",
-        action: body.action,
-        note: body.note,
-        validationIssues: body.validationIssues,
-      },
+      data: data as any,
     });
 
     return createSuccessResponse({ id: updated.id });

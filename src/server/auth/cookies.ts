@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 const COOKIE_NAME = process.env.AUTH_SESSION_COOKIE_NAME ?? "fwc_session";
 const MAX_AGE_DAYS = parseInt(process.env.AUTH_SESSION_MAX_AGE_DAYS ?? "30", 10);
-const SECURE = process.env.AUTH_REQUIRE_HTTPS === "true" || process.env.NODE_ENV === "production";
+const SECURE = process.env.AUTH_REQUIRE_HTTPS === "true";
 
 export async function setSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies();

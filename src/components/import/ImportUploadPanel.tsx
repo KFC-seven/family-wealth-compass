@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Smartphone, Shield, Landmark } from "lucide-react";
+import { Upload, Smartphone, Shield, Landmark, Pencil } from "lucide-react";
 import { ImportExample, ImportSource } from "@/types/import";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ const sourceIcons: Record<ImportSource, React.ReactNode> = {
   alipay: <Smartphone className="w-5 h-5" />,
   broker: <Shield className="w-5 h-5" />,
   bank: <Landmark className="w-5 h-5" />,
+  manual: <Pencil className="w-5 h-5" />,
+  batch_paste: <Pencil className="w-5 h-5" />,
 };
 
 interface ImportUploadPanelProps {

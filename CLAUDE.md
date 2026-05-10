@@ -1,6 +1,6 @@
 # 家庭财富罗盘 (Family Wealth Compass)
 
-家庭财富投资管理 Web 应用，单家庭自用。17 个阶段完成，已部署到阿里云 ECS。
+家庭财富投资管理 Web 应用，单家庭自用。18 个阶段完成，已部署到阿里云 ECS。
 
 ## 运行命令
 
@@ -38,6 +38,7 @@ npm run job:morning-brief     # 每日晨报（生成+推送）
 npm run api:smoke      # API 冒烟测试 (需 dev server 运行中)
 npm run import:smoke    # 导入链路冒烟测试 (service-level)
 npm run brief:smoke     # AI简报+推送冒烟测试 (service-level)
+npm run manual-import:smoke  # 手动导入冒烟测试 (service-level)
 npm run providers:doctor     # Provider 配置诊断
 npm run real-providers:smoke # 真实 Provider 测试 (无 key 时 SKIP)
 npm run real-brief:dry-run    # 真实简报演练 (--push 含推送)
@@ -91,7 +92,7 @@ docs/
 | `/members/[id]` | 成员详情 (持仓/已清仓/交易/理念/趋势) | 动态 |
 | `/holdings` | 持仓列表 (按成员分组+下钻饼图) | 静态 |
 | `/holdings/[id]` | 单仓详情 (买卖点图/收益拆解/交易周期/AI) | 动态 |
-| `/import` | 导入确认 (上传/OCR/编辑/校验/保存) | 静态 |
+| `/import` | 导入中心 (截图OCR/手动持仓/手动交易/批量粘贴) | 静态 |
 | `/brief` | 每日简报 (市场/成员/新闻/风险/建议/推送) | 静态 |
 | `/settings` | 设置 (10个分组) | 静态 |
 | `/login` | 登录 | 动态 |
@@ -109,6 +110,7 @@ docs/
 `/api/import-sessions/[id]/rows` (POST),
 `/api/import-sessions/[id]/rows/[rowId]` (PATCH+DELETE),
 `/api/import-sessions/[id]/confirm` (POST),
+`/api/import-sessions/[id]/parse-paste` (POST, 可选),
 `/api/daily-brief` (GET),
 `/api/daily-brief/generate` (POST),
 `/api/daily-brief/push` (POST),
@@ -187,7 +189,7 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] Import API 完整链路 (upload → recognize → edit → confirm)
   - [x] 导入页 API 驱动 (保留 mock fallback)
   - [x] HOLDING_SNAPSHOT 保存完整可用
-  - [x] TRANSACTION_RECORD 基础结构 (待完善 cashImpact/realizedReturn)
+  - [x] TRANSACTION_RECORD 完整保存 (Phase 18 完善, 支持8种交易类型)
   - [x] 文件校验 (大小/MIME/扩展名/hash)
   - [ ] 阿里云 OSS 真实上传 (骨架已预留)
   - [ ] 阿里云 OCR 真实调用 (骨架已预留)
@@ -200,8 +202,9 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] 5 个新 API: brief generate/push, ai status, push status/test
   - [x] job:morning-brief 可完整执行 (生成→推送)
   - [x] brief:smoke 6/6 通过
-  - [ ] 真实 DeepSeek API 调用 (需 DEEPSEEK_API_KEY)
-  - [ ] 真实 WeCom/Server 酱推送 (需配置 webhook)
+  - [x] 真实 DeepSeek API 调用 (用户已配置 key, 生产验证通过)
+  - [x] 真实 Server 酱推送 (用户已配置 key, 生产验证通过)
+  - [ ] 真实 WeCom Bot 推送验证 (用户未配置)
   - [ ] 阿里云百炼真实调用 (骨架已预留)
 - [x] 认证与家庭权限 (Phase 12)
   - [x] 密码哈希 (PBKDF2-SHA512, 10万次迭代)
@@ -253,6 +256,27 @@ AiGenerationRun, PushNotification, PasswordCredential, UserSession
   - [x] crontab 定时任务已配置
   - [x] 数据库备份 (87K SQL)
   - [ ] HTTPS/域名 (使用 IP 直连)
+- [x] 手动导入 + 交易记录保存完善 (Phase 18)
+  - [x] `/import` 新增手动录入持仓 tab
+  - [x] `/import` 新增手动录入交易 tab
+  - [x] `/import` 新增批量粘贴 tab
+  - [x] ImportSession 支持 MANUAL / BATCH_PASTE sourcePlatform
+  - [x] RecognizedImportRow 支持交易字段 (transactionType/tradeDate/grossAmount/fee/tax/netAmount/cashImpact/realizedReturn)
+  - [x] TRANSACTION_RECORD 完善: BUY/SELL/DIVIDEND/INTEREST/DEPOSIT/WITHDRAW/FEE/ADJUSTMENT
+  - [x] 交易保存正确计算 cashImpact / realizedReturn / Holding 联动
+  - [x] BUY: quantity/remainingCost 增加, averageCost 重算
+  - [x] SELL: quantity/remainingCost 减少, realizedReturn 计算, CLEARED 状态
+  - [x] DIVIDEND/INTEREST: realizedReturn 增加, cashImpact 为正
+  - [x] DEPOSIT/WITHDRAW: 不计入收益
+  - [x] FEE: 费用减少 realizedReturn
+  - [x] ADJUSTMENT: 要求备注, 不自动推断收益
+  - [x] 批量 rows API (POST 支持数组)
+  - [x] 后台校验 row 级错误
+  - [x] 截图 OCR 导入流程保持完整
+  - [x] manual-import:smoke 14/14 通过
+  - [ ] 阿里云 OSS 真实上传 (骨架已预留)
+  - [ ] 阿里云 OCR 真实调用 (骨架已预留)
+  - [ ] 真实新闻数据源
 
 ## 明确不做 / Out of Scope
 

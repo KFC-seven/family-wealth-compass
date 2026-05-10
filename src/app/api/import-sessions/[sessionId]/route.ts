@@ -45,6 +45,7 @@ export async function GET(
         assetCode: r.assetCode,
         assetType: r.assetType,
         currency: r.currency,
+        market: r.market,
         quantity: r.quantity?.toString() ?? null,
         price: r.price?.toString() ?? null,
         marketValue: r.marketValue?.toString() ?? null,
@@ -57,6 +58,15 @@ export async function GET(
         validationIssues: r.validationIssues,
         action: r.action,
         note: r.note,
+        // 交易字段
+        transactionType: r.transactionType,
+        tradeDate: r.tradeDate?.toISOString() ?? null,
+        grossAmount: r.grossAmount?.toString() ?? null,
+        fee: r.fee?.toString() ?? null,
+        tax: r.tax?.toString() ?? null,
+        netAmount: r.netAmount?.toString() ?? null,
+        cashImpact: r.cashImpact?.toString() ?? null,
+        realizedReturn: r.realizedReturn?.toString() ?? null,
       })),
     });
   } catch (err) {

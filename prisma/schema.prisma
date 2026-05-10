@@ -70,6 +70,8 @@ enum ImportSourcePlatform {
   BROKER
   BANK
   OTHER
+  MANUAL
+  BATCH_PASTE
 }
 
 enum ImportSaveMode {
@@ -439,9 +441,9 @@ model RecognizedImportRow {
   sourcePlatform    ImportSourcePlatform
   memberId          String?
   accountId         String?
-  assetName         String
+  assetName         String               @default("")
   assetCode         String?
-  assetType         String
+  assetType         String               @default("OTHER")
   currency          String               @default("CNY")
   quantity          Decimal?
   price             Decimal?
@@ -459,6 +461,16 @@ model RecognizedImportRow {
   action            String?
   confirmedAt       DateTime?
   note              String?
+  // --- 手动导入 / 交易相关字段 ---
+  market           String?    // 交易市场
+  transactionType  String?    // TransactionType: BUY/SELL/DIVIDEND/...
+  tradeDate        DateTime?  // 交易日期
+  grossAmount      Decimal?   // 成交金额
+  fee              Decimal?   // 费用
+  tax              Decimal?   // 税费
+  netAmount        Decimal?   // 净额
+  cashImpact       Decimal?   // 现金影响
+  realizedReturn   Decimal?   // 已实现收益
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   session ImportSession @relation(fields: [importSessionId], references: [id])

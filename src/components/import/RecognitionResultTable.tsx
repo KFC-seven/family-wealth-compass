@@ -8,20 +8,23 @@ import { formatMoney } from "@/lib/format";
 import { RecognitionStatusBadge, ConfidenceBadge } from "./RecognitionStatusBadge";
 import { cn } from "@/lib/utils";
 
+const DEFAULT_MEMBERS = ["爸爸", "妈妈", "孩子"];
+const DEFAULT_ACCOUNTS: Record<string, string[]> = {
+  alipay: ["支付宝基金账户"],
+  broker: ["华泰证券账户"],
+  bank: ["招商银行账户", "工商银行理财账户", "黄金积存金账户"],
+};
+
 interface RecognitionResultTableProps {
   rows: RecognizedAssetRow[];
   onUpdateRow: (rowId: string, fields: Partial<RecognizedAssetRow["fields"]>) => void;
   onToggleAction: (rowId: string, action: "save" | "ignore") => void;
   onAddRow: () => void;
   readOnly?: boolean;
+  memberOptions?: string[];
+  accountOptions?: string[];
 }
 
-const MEMBER_OPTIONS = ["爸爸", "妈妈", "孩子"];
-const ACCOUNT_OPTIONS: Record<string, string[]> = {
-  alipay: ["支付宝基金账户"],
-  broker: ["华泰证券账户"],
-  bank: ["招商银行账户", "工商银行理财账户", "黄金积存金账户"],
-};
 const ASSET_TYPES = Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }));
 
 function EditableField({
@@ -79,7 +82,11 @@ function EditableField({
   );
 }
 
-export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAddRow, readOnly }: RecognitionResultTableProps) {
+export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAddRow, readOnly, memberOptions, accountOptions }: RecognitionResultTableProps) {
+  const members = memberOptions && memberOptions.length > 0 ? memberOptions : DEFAULT_MEMBERS;
+  const accountsBySource: Record<string, string[]> = accountOptions && accountOptions.length > 0
+    ? { alipay: accountOptions, broker: accountOptions, bank: accountOptions }
+    : DEFAULT_ACCOUNTS;
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   if (rows.length === 0) {
@@ -109,13 +116,13 @@ export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAd
               <RecognitionStatusBadge status={row.status} className="flex-shrink-0" />
               <div className="grid grid-cols-8 gap-2 flex-1 min-w-0">
                 <div className="min-w-0">
-                  <EditableField field={f.member} options={MEMBER_OPTIONS} onChange={(v) => {
+                  <EditableField field={f.member} options={members} onChange={(v) => {
                     const newField = { ...f.member, value: v };
                     onUpdateRow(row.id, { member: newField });
                   }} />
                 </div>
                 <div className="min-w-0">
-                  <EditableField field={f.account} options={ACCOUNT_OPTIONS[row.source]} onChange={(v) => {
+                  <EditableField field={f.account} options={(accountsBySource[row.source] ?? [])} onChange={(v) => {
                     onUpdateRow(row.id, { account: { ...f.account, value: v } });
                   }} />
                 </div>

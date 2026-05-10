@@ -25,7 +25,7 @@ export const transactionCreateSchema = z.object({
 export const importSessionCreateSchema = z.object({
   householdId: z.string().min(1),
   memberId: z.string().optional(),
-  sourcePlatform: z.enum(["ALIPAY", "BROKER", "BANK", "OTHER"]),
+  sourcePlatform: z.enum(["ALIPAY", "BROKER", "BANK", "OTHER", "MANUAL", "BATCH_PASTE"]),
   saveMode: z.enum(["HOLDING_SNAPSHOT", "TRANSACTION_RECORD"]),
   originalFileName: z.string().optional(),
 });

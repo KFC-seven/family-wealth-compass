@@ -9,6 +9,8 @@ const sourceConfig: Record<ImportSource, { icon: React.ReactNode; color: string;
   alipay: { icon: <Smartphone className="w-4 h-4" />, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30" },
   broker: { icon: <Shield className="w-4 h-4" />, color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/30" },
   bank: { icon: <Landmark className="w-4 h-4" />, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/30" },
+  manual: { icon: <Smartphone className="w-4 h-4" />, color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-950/30" },
+  batch_paste: { icon: <Smartphone className="w-4 h-4" />, color: "text-gray-600 dark:text-gray-400", bg: "bg-gray-50 dark:bg-gray-950/30" },
 };
 
 interface ScreenshotPreviewProps {
