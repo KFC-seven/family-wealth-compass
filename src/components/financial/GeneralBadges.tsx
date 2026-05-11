@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 
 export function ScopeBadge({ scope, className }: { scope: string; className?: string }) {
   return (
@@ -9,20 +9,20 @@ export function ScopeBadge({ scope, className }: { scope: string; className?: st
   );
 }
 
-const typeColorMap: Record<AssetType, string> = {
-  cash: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  aShare: "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400",
-  usStock: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
-  etf: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400",
-  mutualFund: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400",
-  bankWealth: "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400",
-  gold: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+const simplifiedColorMap: Record<string, string> = {
+  "股票": "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400",
+  "基金": "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400",
+  "黄金": "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+  "债券": "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400",
+  "现金": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  "其他": "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
 };
 
-export function AssetTypeBadge({ type, className }: { type: AssetType; className?: string }) {
+export function AssetTypeBadge({ type, className }: { type: string; className?: string }) {
+  const label = formatAssetType(type);
   return (
-    <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", typeColorMap[type], className)}>
-      {ASSET_TYPE_LABELS[type]}
+    <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", simplifiedColorMap[label] ?? simplifiedColorMap["其他"], className)}>
+      {label}
     </span>
   );
 }

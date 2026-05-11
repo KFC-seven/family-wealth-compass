@@ -200,17 +200,15 @@ describe("mapApiMemberToViewModel", () => {
 
 // ── mapApiHouseholdToViewModel ──
 describe("mapApiHouseholdToViewModel", () => {
-  it("filters out CLEARED holdings from return calculations", () => {
+  it("uses pre-computed returns from household-summary API", () => {
     const result = mapApiHouseholdToViewModel(
-      { totalAssets: 30000, cashBalance: 5000 },
+      { totalAssets: 30000, cashBalance: 5000, todayReturn: 150, holdingReturn: 2000, realizedReturn: 500, cumulativeReturn: 2500 },
       [{ id: "mem-001", displayName: "张三", cashBalance: 2000, holdings: [], accounts: [] }],
-      [
-        { id: "h-001", assetName: "A", assetType: "A_SHARE", marketValue: 10000, holdingReturn: 2000, realizedReturn: 500, cumulativeReturn: 2500, status: "ACTIVE" },
-        { id: "h-002", assetName: "B", assetType: "ETF", marketValue: 5000, holdingReturn: 500, realizedReturn: 100, cumulativeReturn: 600, status: "CLEARED" },
-      ],
+      [],
     );
     expect(result.totalAssets).toBe(30000);
     expect(result.cashBalance).toBe(5000);
+    expect(result.todayReturn).toBe(150);
     expect(result.holdingReturn).toBe(2000);
     expect(result.realizedReturn).toBe(500);
     expect(result.cumulativeReturn).toBe(2500);

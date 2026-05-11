@@ -114,9 +114,10 @@ export default function ImportPage() {
   }, []);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadedFile(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const firstFile = files[0];
+    setUploadedFile(firstFile);
     setRecogStatus("uploading");
     try {
       const houseResp = await api.householdSummary();
@@ -125,19 +126,24 @@ export default function ImportPage() {
       });
       const sessId = sessResp.id;
       setApiSessionId(sessId);
-      await api.uploadImportFile(sessId, file);
-      setSession((s) => ({ ...s, id: sessId, source: "alipay", screenshotUrl: URL.createObjectURL(file), status: "uploaded" }));
+
+      // Upload all files in one request
+      await api.uploadImportFiles(sessId, files);
+
+      setSession((s) => ({ ...s, id: sessId, source: "alipay", screenshotUrl: URL.createObjectURL(firstFile), status: "uploaded" }));
       setRecogStatus("recognizing");
       setSession((s) => ({ ...s, status: "recognizing" }));
       await api.recognizeImport(sessId);
       const full = await api.getImportSession(sessId);
       setRecogStatus("done");
+      // Auto-fill member with first available member if not set by AI
+      const defaultMember = memberOptions.length > 0 ? memberOptions[0] : "";
       setSession((s) => ({
         ...s, id: sessId, source: "alipay", status: "review",
         rows: full.rows.map((r: any) => ({
           id: r.id, source: full.sourcePlatform as any,
           fields: {
-            member: { value: r.memberId ?? "", confidence: r.confidence, editable: true },
+            member: { value: r.memberId || defaultMember, confidence: r.confidence, editable: true },
             account: { value: r.accountId ?? "", confidence: r.confidence, editable: true },
             assetName: { value: r.assetName, confidence: r.confidence, editable: true },
             assetCode: { value: r.assetCode ?? "", confidence: r.confidence, editable: true },
@@ -149,7 +155,7 @@ export default function ImportPage() {
             marketValue: { value: r.marketValue ?? "", confidence: r.confidence, editable: true },
             cost: { value: r.cost ?? "", confidence: r.confidence, editable: true },
             holdingReturn: { value: r.holdingReturn ?? "", confidence: r.confidence, editable: true },
-            holdingReturnRate: { value: "", confidence: r.confidence, editable: true },
+            holdingReturnRate: { value: r.holdingReturnRate ?? "", confidence: r.confidence, editable: true },
             cashBalance: { value: "", confidence: r.confidence, editable: true },
             dataDate: { value: new Date().toISOString().slice(0, 10), confidence: r.confidence, editable: true },
             note: { value: r.note ?? "", confidence: 100, editable: true },
@@ -172,7 +178,9 @@ export default function ImportPage() {
       setRecogStatus("error");
       setUseApi(false);
     }
-  }, []);
+    // Reset file input so the same files can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [memberOptions]);
 
   const handleUploadClick = useCallback(() => {
     if (useApi) { fileInputRef.current?.click(); }
@@ -300,6 +308,7 @@ export default function ImportPage() {
             issueCount: rows.length - result.savedCount - result.ignoreCount,
             members, accounts, assetTypes },
         }));
+        router.refresh(); // Refresh server components (holdings, members, etc.)
       } catch (err) {
         setSession((s) => ({ ...s, status: "review" }));
         console.error("[Import] Save failed", err);
@@ -362,7 +371,7 @@ export default function ImportPage() {
       <PageHeader title={pageTitle} subtitle={pageSubtitle} />
 
       {/* Hidden file input for OCR mode */}
-      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple
         onChange={handleFileSelect} className="hidden" />
 
       {!useApi && (
@@ -378,9 +387,9 @@ export default function ImportPage() {
       {isDone && session.result ? (
         <ImportSuccessState result={session.result} onGoHome={handleGoHome} onContinue={handleContinue} />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-5">
-          {/* Left panel */}
-          <div className="lg:col-span-2 space-y-4">
+        <div className="max-w-2xl mx-auto space-y-6">
+          {/* Upload / preview area */}
+          <div className="space-y-4">
             {/* OCR mode: upload panel */}
             {mode === "ocr" && isSelecting && (
               <ImportUploadPanel
@@ -404,7 +413,7 @@ export default function ImportPage() {
               />
             )}
 
-            {mode === "ocr" && <RecognitionProgress status={recogStatus} />}
+            {mode === "ocr" && <RecognitionProgress status={recogStatus} fileCount={uploadedFile ? 1 : undefined} />}
 
             {/* Batch paste panel */}
             {mode === "batch_paste" && isSelecting && (
@@ -416,8 +425,8 @@ export default function ImportPage() {
             )}
           </div>
 
-          {/* Right panel */}
-          <div className="lg:col-span-3 space-y-4">
+          {/* Results / form area */}
+          <div className="space-y-4">
             {/* OCR review mode */}
             {mode === "ocr" && isReview && (
               <>

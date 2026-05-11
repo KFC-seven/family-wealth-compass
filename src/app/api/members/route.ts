@@ -18,6 +18,7 @@ export async function GET() {
       displayName: m.displayName,
       roleLabel: m.roleLabel,
       isAdmin: m.isAdmin,
+      isActive: m.isActive,
       accounts: m.accounts.map((a) => ({
         id: a.id,
         name: a.name,

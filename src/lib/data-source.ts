@@ -34,6 +34,9 @@ import { mockMembers } from "@/data/mock-members";
 import {
   mockHoldings,
 } from "@/data/mock-holdings";
+import { mockTransactions } from "@/data/mock-transactions";
+import { mockPhilosophies } from "@/data/mock-philosophy";
+import { memberDailyReturnsMap, memberMonthlyAssetsMap } from "@/data/mock-member-trends";
 import { mockBrief } from "@/data/mock-brief";
 import {
   mockAppearanceSettings as mockAppearance,
@@ -44,6 +47,7 @@ import {
 import type {
   Household, Member, Holding, DailyReturn, MonthlyAsset,
   AssetAllocation, MemberAllocation, RiskAlert, HoldingRankItem,
+  Transaction, TransactionType, InvestorPhilosophy,
 } from "@/types/finance";
 import type { DailyBrief as BriefViewModel } from "@/types/brief";
 import type { AppearanceSettings, WeChatPushSettings, ReturnMethodSettings } from "@/types/settings";
@@ -84,11 +88,14 @@ export async function getHousehold(): Promise<{
   }
 
   try {
-    const [summary, members, holdingsData, briefData] = await Promise.all([
+    const [summary, members, holdingsData, briefData, dailyReturnsRes, monthlyAssetsRes, riskAlertsRes] = await Promise.all([
       api.householdSummary(),
       api.members(),
       api.holdings(),
       api.dailyBrief().catch(() => null),
+      api.portfolioDailyReturns().catch(() => null),
+      api.portfolioMonthlyAssets().catch(() => null),
+      api.portfolioRiskAlerts().catch(() => null),
     ]);
 
     const household = mapApiHouseholdToViewModel(
@@ -118,14 +125,18 @@ export async function getHousehold(): Promise<{
     const assetAllocation = buildAssetAllocation(filteredHoldings, totalAssets);
     const memberAllocation = buildMemberAllocation(members, filteredHoldings, totalAssets);
 
-    // For now, dailyReturns / monthlyAssets / riskAlerts still come from mock
+    // Use real API data with mock fallback on empty/null
+    const dailyReturns = dailyReturnsRes as Array<{ date: string; value: number }> | null;
+    const monthlyAssets = monthlyAssetsRes as Array<{ month: string; value: number }> | null;
+    const riskAlerts = riskAlertsRes as RiskAlert[] | null;
+
     return {
       household,
-      dailyReturns: mockDailyReturns,
-      monthlyAssets: mockMonthlyAssets,
+      dailyReturns: dailyReturns && dailyReturns.length > 0 ? dailyReturns : mockDailyReturns,
+      monthlyAssets: monthlyAssets && monthlyAssets.length > 0 ? monthlyAssets : mockMonthlyAssets,
       assetAllocation,
       memberAllocation,
-      riskAlerts: mockRiskAlerts,
+      riskAlerts: riskAlerts && riskAlerts.length > 0 ? riskAlerts : mockRiskAlerts,
       topGainers,
       topLosers,
       briefPreview: briefData
@@ -260,6 +271,7 @@ export async function getMemberById(memberId: string): Promise<{
   member: Member;
   currentHoldings: Holding[];
   clearedHoldings: Holding[];
+  philosophy: InvestorPhilosophy | null;
 }> {
   if (!USE_API_DATA) {
     const memberMock = mockMembers.find((m) => m.id === memberId);
@@ -269,6 +281,7 @@ export async function getMemberById(memberId: string): Promise<{
       member: memberMock,
       currentHoldings: allHoldings.filter((h) => !h.isCleared),
       clearedHoldings: allHoldings.filter((h) => h.isCleared),
+      philosophy: mockPhilosophies.find((p) => p.memberId === memberId) || null,
     };
   }
 
@@ -276,10 +289,12 @@ export async function getMemberById(memberId: string): Promise<{
     const detail = await api.member(memberId);
     const member = mapApiMemberToViewModel(detail);
     const allHoldings = (detail.holdings || []).map(mapApiHoldingToViewModel);
+    const dbProfile = (detail as Record<string, unknown>).investorProfile as Record<string, unknown> | null;
     return {
       member,
       currentHoldings: allHoldings.filter((h) => h.isCleared !== true),
       clearedHoldings: allHoldings.filter((h) => h.isCleared === true),
+      philosophy: dbProfile ? mapDbInvestorProfileToPhilosophy(dbProfile, memberId) : null,
     };
   } catch {
     logFallback("getMemberById");
@@ -290,6 +305,7 @@ export async function getMemberById(memberId: string): Promise<{
       member: memberMock,
       currentHoldings: allHoldings.filter((h) => !h.isCleared),
       clearedHoldings: allHoldings.filter((h) => h.isCleared),
+      philosophy: mockPhilosophies.find((p) => p.memberId === memberId) || null,
     };
   }
 }
@@ -328,6 +344,107 @@ export async function getMemberSummaryData(memberId: string) {
     };
   }
 }
+
+export async function getMemberTrends(memberId: string): Promise<{
+  dailyReturns: DailyReturn[];
+  monthlyAssets: MonthlyAsset[];
+}> {
+  if (!USE_API_DATA) {
+    return {
+      dailyReturns: memberDailyReturnsMap[memberId] || [],
+      monthlyAssets: memberMonthlyAssetsMap[memberId] || [],
+    };
+  }
+
+  try {
+    return await api.memberTrends(memberId);
+  } catch {
+    logFallback("getMemberTrends");
+    return {
+      dailyReturns: memberDailyReturnsMap[memberId] || [],
+      monthlyAssets: memberMonthlyAssetsMap[memberId] || [],
+    };
+  }
+}
+
+export async function getMemberTransactions(memberId: string): Promise<Transaction[]> {
+  if (!USE_API_DATA) {
+    return mockTransactions
+      .filter((t) => t.memberId === memberId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  try {
+    const raw = await api.memberTransactions(memberId);
+    return raw.map(mapApiTxToTransaction).sort((a, b) => b.date.localeCompare(a.date));
+  } catch {
+    logFallback("getMemberTransactions");
+    return mockTransactions
+      .filter((t) => t.memberId === memberId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+}
+
+function mapApiTxToTransaction(t: Record<string, unknown>): Transaction {
+  return {
+    id: t.id as string,
+    memberId: t.memberId as string,
+    accountId: t.accountId as string,
+    assetId: (t.assetId as string) || "",
+    type: t.type as TransactionType,
+    date: (t.tradeDate as string) || "",
+    quantity: t.quantity != null && Number(t.quantity) !== 0 ? Number(t.quantity) : undefined,
+    price: t.price != null && Number(t.price) !== 0 ? Number(t.price) : undefined,
+    amount: (t.grossAmount as number) || 0,
+    fee: t.fee != null && Number(t.fee) !== 0 ? Number(t.fee) : undefined,
+    note: (t.note as string) || undefined,
+  };
+}
+
+function mapDbInvestorProfileToPhilosophy(
+  profile: Record<string, unknown>,
+  memberId: string
+): InvestorPhilosophy {
+  const riskPreferenceMap: Record<string, string> = {
+    CONSERVATIVE: "保守", STABLE: "稳健", BALANCED: "平衡",
+    GROWTH: "进取", AGGRESSIVE: "激进",
+  };
+  const horizonMap: Record<string, string> = {
+    SHORT: "短期", MEDIUM: "中期", LONG: "长期", VERY_LONG: "超长期",
+  };
+  const adviceMap: Record<string, string> = {
+    CONSERVATIVE: "保守", BALANCED: "平衡",
+    POSITIVE_WITH_CONDITIONS: "偏积极", ACTIVE_WITH_TRIGGERS: "偏积极",
+  };
+
+  const parseJsonArr = (val: unknown): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map(String);
+    if (typeof val === "string") try { return JSON.parse(val); } catch { return []; }
+    return [];
+  };
+
+  const maxSingleAssetWeight = (profile.maxSingleAssetWeight as number) || 30;
+  const maxIndustryWeight = (profile.maxIndustryWeight as number) || 40;
+  const minCashMonths = (profile.minCashReserveMonths as number) || 3;
+
+  return {
+    memberId,
+    riskPreference: riskPreferenceMap[profile.riskPreference as string] || "平衡",
+    investmentHorizon: horizonMap[profile.investmentHorizon as string] || "长期",
+    mainGoal: (profile.primaryGoal as string) || "",
+    maxSingleAssetRatio: maxSingleAssetWeight / 100,
+    maxSingleIndustryRatio: maxIndustryWeight / 100,
+    cashReserveRequirement: Math.min(1, minCashMonths * 0.033),
+    preferredAssets: parseJsonArr(profile.preferredAssets),
+    avoidBehaviors: parseJsonArr(profile.avoidedAssetsOrBehaviors),
+    tradingFrequency: (profile.tradingFrequencyPreference as string) || "",
+    aiAdviceStyle: (profile.customPhilosophyText as string) || adviceMap[profile.adviceStyle as string] || "平衡",
+  };
+}
+
+import { mockPriceHistory } from "@/data/mock-price-history";
+import type { PricePoint, TradeMarker } from "@/types/finance";
 
 // ── Holdings ──
 
@@ -412,6 +529,25 @@ export async function getHoldingTransactions(holdingId: string) {
   } catch {
     logFallback("getHoldingTransactions");
     return [];
+  }
+}
+
+export async function getHoldingPriceHistory(holdingId: string): Promise<{
+  prices: PricePoint[];
+  markers: TradeMarker[];
+} | null> {
+  if (!USE_API_DATA) {
+    const mock = mockPriceHistory[holdingId];
+    return mock ? { prices: mock.prices, markers: mock.markers } : null;
+  }
+
+  try {
+    const result = await api.holdingPriceHistory(holdingId);
+    return result as { prices: PricePoint[]; markers: TradeMarker[] };
+  } catch {
+    logFallback("getHoldingPriceHistory");
+    const mock = mockPriceHistory[holdingId];
+    return mock ? { prices: mock.prices, markers: mock.markers } : null;
   }
 }
 

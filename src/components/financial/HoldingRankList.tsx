@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HoldingRankItem } from "@/types/finance";
-import { ASSET_TYPE_LABELS } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { formatSignedMoney, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export function HoldingRankList({ data, type, className }: HoldingRankListProps)
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{item.assetName}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.memberName} · {ASSET_TYPE_LABELS[item.assetType]}
+                  {item.memberName} · {formatAssetType(item.assetType)}
                 </p>
               </div>
             </div>

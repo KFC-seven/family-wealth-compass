@@ -1,5 +1,5 @@
 import { RecognizedAssetRow, ImportValidationIssue, ImportSummary, ImportSaveMode, ImportSource, RecognitionRowStatus } from "@/types/import";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { IMPORT_SOURCE_LABELS } from "@/types/import";
 
 export function validateRecognizedRows(rows: RecognizedAssetRow[]): ImportValidationIssue[] {
@@ -93,7 +93,7 @@ export function calculateImportSummary(
     if (row.fields.member.value.trim()) members.add(row.fields.member.value.trim());
     if (row.fields.account.value.trim()) accounts.add(row.fields.account.value.trim());
     if (row.fields.assetType.value.trim()) {
-      const label = ASSET_TYPE_LABELS[row.fields.assetType.value as AssetType];
+      const label = formatAssetType(row.fields.assetType.value);
       assetTypes.add(label || row.fields.assetType.value);
     }
   }
@@ -135,7 +135,7 @@ export function normalizeRecognizedAmount(value: string): number {
 }
 
 export function mapRecognizedAssetTypeLabel(typeValue: string): string {
-  return ASSET_TYPE_LABELS[typeValue as AssetType] || typeValue;
+  return formatAssetType(typeValue);
 }
 
 export function mapImportSourceLabel(source: ImportSource): string {

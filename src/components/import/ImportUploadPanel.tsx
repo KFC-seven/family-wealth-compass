@@ -36,8 +36,8 @@ export function ImportUploadPanel({ examples, onSelectExample, onUploadClick, se
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Upload className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-sm font-medium">点击上传截图</p>
-            <p className="text-xs text-muted-foreground">支持 JPG、PNG 格式</p>
+            <p className="text-sm font-medium">点击上传截图（可一次选择多张）</p>
+            <p className="text-xs text-muted-foreground">支持 JPG、PNG、WebP 格式</p>
           </button>
           <p className="text-xs text-muted-foreground text-center">截图可能包含敏感资产信息，请仅在可信环境中使用。</p>
         </CardContent>

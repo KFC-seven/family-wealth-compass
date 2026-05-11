@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatSignedMoney, formatPercent, formatMoney } from "@/lib/format";
-import { ASSET_TYPE_LABELS } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { EmptyState } from "@/components/financial/GeneralBadges";
 import type { Holding } from "@/types/finance";
 
@@ -18,7 +18,7 @@ export function ClearedHoldingList({ holdings }: ClearedHoldingListProps) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium">{h.assetName}</p>
-              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{ASSET_TYPE_LABELS[h.assetType]}</span>
+              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{formatAssetType(h.assetType)}</span>
               <span className="text-[10px] text-neutral border border-border px-1.5 py-0.5 rounded">已清仓</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">

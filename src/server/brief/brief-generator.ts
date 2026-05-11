@@ -54,6 +54,13 @@ export async function generateDailyBrief(options: GenerateBriefOptions = {}) {
     const validated = dailyBriefAiOutputSchema.parse(output);
     output = validated as AiBriefOutput;
 
+    // 把 AI 筛选后的新闻对应回原始数据（补全 category 字段）
+    const newsTitleMap = new Map(context.newsHighlights.map(n => [n.title, n]));
+    output.newsItems = output.newsItems.map(n => {
+      const original = newsTitleMap.get(n.title);
+      return original ? { ...n, category: (original as any).category } as typeof n : n;
+    });
+
     // Safety check
     const safety = checkSafety(output);
     if (!safety.passed) {

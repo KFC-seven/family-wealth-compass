@@ -9,6 +9,13 @@ export async function GET() {
     if (!settings) {
       return createErrorResponse({ code: "NOT_FOUND", message: "暂无设置" }, 404);
     }
+
+    const household = await prisma.household.findFirst();
+
+    const appearance = (typeof settings.appearance === "string"
+      ? JSON.parse(settings.appearance)
+      : settings.appearance) as Record<string, unknown>;
+
     return createSuccessResponse({
       id: settings.id,
       appearance: settings.appearance,
@@ -16,6 +23,16 @@ export async function GET() {
       pushSettings: settings.pushSettings,
       dataSourceSettings: settings.dataSourceSettings,
       scheduledJobSettings: settings.scheduledJobSettings,
+      household: household ? {
+        id: household.id,
+        name: household.name,
+        baseCurrency: household.baseCurrency,
+        permissionMode: household.permissionMode,
+      } : null,
+      householdDisplay: {
+        totalAssetsDisplay: (appearance.totalAssetsDisplay as string) || "show",
+      },
+      assetTypeConfig: (appearance.assetTypeConfig as Array<Record<string, unknown>>) || [],
     });
   } catch (err) {
     return handleApiError(err);

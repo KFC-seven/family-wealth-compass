@@ -119,22 +119,16 @@ export function mapApiHouseholdToViewModel(
   summary: Record<string, unknown>,
   members: Array<Record<string, unknown>>,
   holdings: Array<Record<string, unknown>>,
-  _snapshots?: Array<Record<string, unknown>>
 ): Household {
-  const totalAssets = summary.totalAssets as number || 0;
-  const activeHoldings = holdings.filter((h) => (h as { status?: string }).status !== "CLEARED");
-  const holdingReturn = activeHoldings.reduce((s, h) => s + (h.holdingReturn as number || 0), 0);
-  const realizedReturn = activeHoldings.reduce((s, h) => s + (h.realizedReturn as number || 0), 0);
-  const cumulativeReturn = activeHoldings.reduce((s, h) => s + (h.cumulativeReturn as number || 0), 0);
   return {
-    totalAssets,
+    totalAssets: summary.totalAssets as number || 0,
     cashBalance: summary.cashBalance as number || 0,
-    todayReturn: 0,
-    holdingReturn,
-    holdingReturnRate: null,
-    realizedReturn,
-    cumulativeReturn,
-    cumulativeReturnRate: null,
+    todayReturn: summary.todayReturn as number || 0,
+    holdingReturn: summary.holdingReturn as number || 0,
+    holdingReturnRate: (summary.holdingReturnRate as number | null) ?? null,
+    realizedReturn: summary.realizedReturn as number || 0,
+    cumulativeReturn: summary.cumulativeReturn as number || 0,
+    cumulativeReturnRate: (summary.cumulativeReturnRate as number | null) ?? null,
     members: members.map((m) => mapApiMemberToViewModel(m)),
   };
 }

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { RecognizedAssetRow, ImportSource } from "@/types/import";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { emptyImportFields } from "@/lib/import-helpers";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -11,9 +11,16 @@ const DEFAULT_ACCOUNTS: Record<string, string[]> = {
   alipay: ["支付宝基金账户"],
   broker: ["华泰证券账户"],
   bank: ["招商银行账户", "工商银行理财账户", "黄金积存金账户"],
+  gold: ["黄金积存金账户"],
   manual: ["支付宝基金账户", "华泰证券账户", "招商银行账户", "工商银行理财账户", "黄金积存金账户"],
 };
-const ASSET_TYPES = Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }));
+const ASSET_TYPES = [
+  { value: "A_SHARE", label: "股票" },
+  { value: "MUTUAL_FUND", label: "基金" },
+  { value: "GOLD_ACCUMULATION", label: "黄金" },
+  { value: "BOND", label: "债券" },
+  { value: "CASH", label: "现金" },
+];
 const CURRENCIES = ["CNY", "USD", "HKD"];
 
 interface ManualHoldingFormProps {
@@ -130,10 +137,10 @@ export function ManualHoldingForm({ rows, source, onRowsChange, memberOptions, a
                   <SelectField value={f.member.value} options={members} onChange={(v) => updateRow(row.id, "member", v)} />
                 </Field>
                 <Field label="账户">
-                  <SelectField value={f.account.value} options={accounts ?? []} onChange={(v) => updateRow(row.id, "account", v)} />
+                  <SelectField value={f.account.value} options={accounts ?? []} allowCustom onChange={(v) => updateRow(row.id, "account", v)} />
                 </Field>
                 <Field label="类型">
-                  <SelectField value={f.assetType.value} options={ASSET_TYPES.map((a) => a.value)} onChange={(v) => updateRow(row.id, "assetType", v)} />
+                  <SelectField value={ASSET_TYPES.find(a => a.value === f.assetType.value)?.label || f.assetType.value} options={ASSET_TYPES.map((a) => a.label)} onChange={(v) => { const ev = ASSET_TYPES.find(a => a.label === v)?.value || v; updateRow(row.id, "assetType", ev); }} />
                 </Field>
                 <Field label="代码">
                   <input value={f.assetCode.value} onChange={(e) => updateRow(row.id, "assetCode", e.target.value)} placeholder="可选" className="w-full text-xs bg-transparent border-b border-border px-1 py-0.5" />
@@ -162,11 +169,11 @@ export function ManualHoldingForm({ rows, source, onRowsChange, memberOptions, a
             {/* Desktop row */}
             <div className="hidden md:grid grid-cols-12 gap-2 items-center">
               <SelectField value={f.member.value} options={members} onChange={(v) => updateRow(row.id, "member", v)} />
-              <SelectField value={f.account.value} options={accounts ?? []} onChange={(v) => updateRow(row.id, "account", v)} />
+              <SelectField value={f.account.value} options={accounts ?? []} allowCustom onChange={(v) => updateRow(row.id, "account", v)} />
               <div className="col-span-2">
                 <input value={f.assetName.value} onChange={(e) => updateRow(row.id, "assetName", e.target.value)} placeholder="资产名称 *" className="w-full text-xs bg-transparent border-b border-border px-1 py-0.5" />
               </div>
-              <SelectField value={f.assetType.value} options={ASSET_TYPES.map((a) => a.value)} onChange={(v) => updateRow(row.id, "assetType", v)} />
+              <SelectField value={ASSET_TYPES.find(a => a.value === f.assetType.value)?.label || f.assetType.value} options={ASSET_TYPES.map((a) => a.label)} onChange={(v) => { const ev = ASSET_TYPES.find(a => a.label === v)?.value || v; updateRow(row.id, "assetType", ev); }} />
               <select value={f.currency.value} onChange={(e) => updateRow(row.id, "currency", e.target.value)} className="w-full text-xs bg-transparent border-b border-border px-1 py-0.5">
                 {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -202,7 +209,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function SelectField({ value, options, onChange }: { value: string; options: string[]; onChange: (v: string) => void }) {
+function SelectField({ value, options, onChange, allowCustom }: { value: string; options: string[]; onChange: (v: string) => void; allowCustom?: boolean }) {
+  const listId = `sf-${value?.replace(/\s/g, '')}-${Math.random().toString(36).slice(2, 6)}`;
+
+  if (allowCustom) {
+    return (
+      <div className="relative">
+        <input
+          list={listId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="输入或选择..."
+          className="w-full text-xs bg-transparent border-b border-border px-1 py-0.5"
+        />
+        <datalist id={listId}>
+          {options.map((o) => <option key={o} value={o} />)}
+        </datalist>
+      </div>
+    );
+  }
+
   return (
     <select
       value={value}

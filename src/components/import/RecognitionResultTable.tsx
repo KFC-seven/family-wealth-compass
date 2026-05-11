@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pencil, Trash2, RotateCcw, ChevronDown, ChevronUp, X, AlertCircle, Check } from "lucide-react";
 import { RecognizedAssetRow, RecognizedField, RecognitionRowStatus } from "@/types/import";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { formatMoney } from "@/lib/format";
 import { RecognitionStatusBadge, ConfidenceBadge } from "./RecognitionStatusBadge";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const DEFAULT_ACCOUNTS: Record<string, string[]> = {
   alipay: ["支付宝基金账户"],
   broker: ["华泰证券账户"],
   bank: ["招商银行账户", "工商银行理财账户", "黄金积存金账户"],
+  gold: ["黄金积存金账户"],
 };
 
 interface RecognitionResultTableProps {
@@ -25,21 +26,37 @@ interface RecognitionResultTableProps {
   accountOptions?: string[];
 }
 
-const ASSET_TYPES = Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }));
+const ASSET_TYPE_DROPDOWN = [
+  { value: "A_SHARE", label: "股票" },
+  { value: "MUTUAL_FUND", label: "基金" },
+  { value: "GOLD_ACCUMULATION", label: "黄金" },
+  { value: "BOND", label: "债券" },
+  { value: "CASH", label: "现金" },
+];
+
+function assetTypeLabel(value: string): string {
+  return ASSET_TYPE_DROPDOWN.find((a) => a.value === value)?.label || formatAssetType(value) || value;
+}
 
 function EditableField({
   field,
   options,
   onChange,
+  formatDisplay,
+  allowCustom,
 }: {
   field: RecognizedField;
   options?: string[];
   onChange: (value: string) => void;
+  formatDisplay?: (v: string) => string;
+  allowCustom?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(field.value);
+  const datalistId = `dl-${field.value?.replace(/\s/g, '')}-${Math.random().toString(36).slice(2, 6)}`;
 
   if (!editing) {
+    const display = formatDisplay ? formatDisplay(field.value) : field.value;
     return (
       <button onClick={() => field.editable && setEditing(true)} className={cn(
         "text-xs text-left w-full hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
@@ -47,11 +64,32 @@ function EditableField({
         field.confidence < 80 && field.value ? "border border-amber-200 dark:border-amber-900 rounded" : ""
       )}>
         <div className="flex items-center gap-1">
-          <span>{field.value || "未识别"}</span>
+          <span>{display || "未识别"}</span>
           {field.editable && <Pencil className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100" />}
           {field.confidence < 80 && field.value && <ConfidenceBadge confidence={field.confidence} />}
         </div>
       </button>
+    );
+  }
+
+  // allowCustom: use input+datalist for suggestions with free-text entry
+  if (options && allowCustom) {
+    return (
+      <div className="relative">
+        <input
+          list={datalistId}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={() => { onChange(val); setEditing(false); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { onChange(val); setEditing(false); } }}
+          autoFocus
+          placeholder="输入或选择..."
+          className="w-full text-xs bg-background border border-border rounded px-1 py-0.5"
+        />
+        <datalist id={datalistId}>
+          {options.map((o) => <option key={o} value={o} />)}
+        </datalist>
+      </div>
     );
   }
 
@@ -122,7 +160,7 @@ export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAd
                   }} />
                 </div>
                 <div className="min-w-0">
-                  <EditableField field={f.account} options={(accountsBySource[row.source] ?? [])} onChange={(v) => {
+                  <EditableField field={f.account} options={(accountsBySource[row.source] ?? [])} allowCustom onChange={(v) => {
                     onUpdateRow(row.id, { account: { ...f.account, value: v } });
                   }} />
                 </div>
@@ -132,8 +170,9 @@ export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAd
                   }} />
                 </div>
                 <div className="min-w-0">
-                  <EditableField field={f.assetType} options={ASSET_TYPES.map((a) => a.value)} onChange={(v) => {
-                    onUpdateRow(row.id, { assetType: { ...f.assetType, value: v } });
+                  <EditableField field={f.assetType} options={ASSET_TYPE_DROPDOWN.map((a) => a.label)} formatDisplay={assetTypeLabel} onChange={(v) => {
+                    const enumVal = ASSET_TYPE_DROPDOWN.find((a) => a.label === v)?.value || v;
+                    onUpdateRow(row.id, { assetType: { ...f.assetType, value: enumVal } });
                   }} />
                 </div>
                 <div className="min-w-0 text-right">
@@ -184,7 +223,7 @@ export function RecognitionResultTable({ rows, onUpdateRow, onToggleAction, onAd
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div><span className="text-muted-foreground">成员</span> {f.member.value || "-"}</div>
                 <div><span className="text-muted-foreground">账户</span> {f.account.value || "-"}</div>
-                <div><span className="text-muted-foreground">类型</span> {ASSET_TYPE_LABELS[f.assetType.value as AssetType] || f.assetType.value || "-"}</div>
+                <div><span className="text-muted-foreground">类型</span> {formatAssetType(f.assetType.value) || "-"}</div>
                 <div><span className="text-muted-foreground">数量</span> {f.quantity.value || "-"}</div>
                 <div><span className="text-muted-foreground">市值</span> {f.marketValue.value ? formatMoney(mktVal) : "-"}</div>
                 <div><span className="text-muted-foreground">收益率</span> {f.holdingReturnRate.value || "-"}</div>

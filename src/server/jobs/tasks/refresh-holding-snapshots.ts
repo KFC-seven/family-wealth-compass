@@ -45,20 +45,34 @@ export const refreshHoldingSnapshotsJob: JobDefinition = {
       try {
         const qty = decimalToNumber(h.quantity);
         const price = decimalToNumber(h.currentPrice);
-        const marketValue = qty * price;
         const remainingCost = decimalToNumber(h.remainingCost);
-        const holdingReturn = marketValue - remainingCost;
         const realized = decimalToNumber(h.realizedReturn);
-        const cumulative = holdingReturn + realized;
 
-        await prisma.holding.update({
-          where: { id: h.id },
-          data: {
-            currentMarketValue: marketValue,
-            holdingReturn,
-            cumulativeReturn: cumulative,
-          },
-        });
+        // Only recalculate if holding has valid quantity (fund imports may not have qty)
+        if (qty > 0 && price > 0) {
+          const marketValue = qty * price;
+          const holdingReturn = marketValue - remainingCost;
+          await prisma.holding.update({
+            where: { id: h.id },
+            data: {
+              currentMarketValue: marketValue,
+              holdingReturn,
+              cumulativeReturn: holdingReturn + realized,
+            },
+          });
+        } else {
+          // Price-only update: keep existing marketValue, recalc return if possible
+          const existingMv = decimalToNumber(h.currentMarketValue);
+          const data: Record<string, number> = {};
+          if (price > 0) data.currentPrice = price;
+          if (existingMv > 0) {
+            data.holdingReturn = existingMv - remainingCost;
+            data.cumulativeReturn = data.holdingReturn + realized;
+          }
+          if (Object.keys(data).length > 0) {
+            await prisma.holding.update({ where: { id: h.id }, data: data as any });
+          }
+        }
 
         successCount++;
       } catch (err) {

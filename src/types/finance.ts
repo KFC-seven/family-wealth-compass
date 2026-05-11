@@ -5,17 +5,42 @@ export type AssetType =
   | "etf"
   | "mutualFund"
   | "bankWealth"
-  | "gold";
+  | "gold"
+  | "bond";
 
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: "现金",
-  aShare: "A股",
-  usStock: "美股",
-  etf: "场内基金",
-  mutualFund: "场外基金",
-  bankWealth: "银行理财",
-  gold: "黄金积存金",
+  aShare: "股票",
+  usStock: "股票",
+  etf: "基金",
+  mutualFund: "基金",
+  bankWealth: "债券",
+  gold: "黄金",
+  bond: "债券",
 };
+
+/** Maps any asset type representation (camelCase, UPPER_CASE, Chinese) to simplified Chinese label */
+export function formatAssetType(raw: string): string {
+  const map: Record<string, string> = {
+    // Prisma enum values
+    A_SHARE: "股票", US_STOCK: "股票", HK_STOCK: "股票",
+    ETF: "基金", MUTUAL_FUND: "基金",
+    GOLD_ACCUMULATION: "黄金",
+    BOND: "债券", BANK_WEALTH: "债券",
+    CASH: "现金", OTHER: "其他",
+    // camelCase
+    aShare: "股票", usStock: "股票", hkStock: "股票",
+    etf: "基金", mutualFund: "基金",
+    bond: "债券", bankWealth: "债券",
+    cash: "现金",
+    // Chinese (from OCR)
+    "A股": "股票", "美股": "股票", "港股": "股票",
+    "场内基金": "基金", "场外基金": "基金", "基金": "基金", "黄金": "基金",
+    "债券": "债券", "银行理财": "债券",
+    "现金": "现金",
+  };
+  return map[raw] ?? raw;
+}
 
 export type TransactionType =
   | "BUY"

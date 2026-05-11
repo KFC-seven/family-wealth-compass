@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db/prisma";
 import { decimalToNumber } from "@/server/finance/mappers";
+import { fetchFinancialNews } from "@/server/news/fetch-news";
 import type { BriefContext } from "./types";
 
 export async function buildBriefContext(date: string): Promise<BriefContext> {
@@ -62,7 +63,7 @@ export async function buildBriefContext(date: string): Promise<BriefContext> {
       name: m.name,
       role: m.roleLabel ?? "成员",
       totalAssets: mTotalAssets,
-      dailyReturn: members.length > 0 ? dailyReturn / members.length : 0,
+      dailyReturn: 0,  // 日收益无法按成员简单均分，由 AI 从持仓变化自行推断
       cumulativeReturn: mCumulativeReturn,
       holdings: mHoldings,
       philosophy: m.investorProfile?.customPhilosophyText ?? "未配置投资理念",
@@ -73,11 +74,8 @@ export async function buildBriefContext(date: string): Promise<BriefContext> {
   // Risk rules
   const riskSignals = generateRiskSignals(memberData, totalHoldingMv, cashBalance, totalAssets);
 
-  // Mock news
-  const newsHighlights = [
-    { title: "A股三大指数小幅波动", impact: "neutral" as const, importance: "medium" as const, summary: "市场整体平稳，成交量适中" },
-    { title: "央行维持当前利率不变", impact: "neutral" as const, importance: "medium" as const, summary: "货币政策保持连续性和稳定性" },
-  ];
+  // News — 从新浪财经抓取滚动新闻
+  const newsHighlights = await fetchFinancialNews();
 
   return {
     householdName: household.name,
@@ -92,7 +90,7 @@ export async function buildBriefContext(date: string): Promise<BriefContext> {
     members: memberData,
     riskSignals,
     newsHighlights,
-    marketSummary: "Mock 市场概况 — A股小幅波动，市场情绪稳定",
+    marketSummary: "",  // 让 AI 基于持仓和行情数据自行生成
   };
 }
 

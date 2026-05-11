@@ -2,20 +2,18 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { MemberSummaryCard } from "@/components/member/MemberSummaryCard";
 import { AccountCard } from "@/components/member/AccountCard";
-import { HoldingListItem } from "@/components/member/HoldingListItem";
 import { ClearedHoldingList } from "@/components/member/ClearedHoldingList";
 import { TransactionTable } from "@/components/member/TransactionTable";
 import { InvestorPhilosophyCard } from "@/components/member/InvestorPhilosophyCard";
 import { ChartCard } from "@/components/charts/ChartCard";
+import { CurrentHoldingsClient } from "@/components/member/CurrentHoldingsClient";
 import { AssetAllocationChart } from "@/components/charts/AssetAllocationChart";
 import { MemberReturnTrendChart } from "@/components/charts/MemberReturnTrendChart";
 import { MemberAssetTrendChart } from "@/components/charts/MemberAssetTrendChart";
-import { getMemberById, getHousehold } from "@/lib/data-source";
-import { mockTransactions } from "@/data/mock-transactions";
-import { mockPhilosophies } from "@/data/mock-philosophy";
-import { memberDailyReturnsMap, memberMonthlyAssetsMap } from "@/data/mock-member-trends";
+import { getMemberById, getHousehold, getMemberTrends, getMemberTransactions } from "@/lib/data-source";
 import { AssetAllocation, AssetType } from "@/types/finance";
 
 interface Props {
@@ -24,24 +22,22 @@ interface Props {
 
 export default async function MemberDetailPage({ params }: Props) {
   const { memberId } = await params;
-  const [data, { household }] = await Promise.all([
+  const [data, { household }, trends, memberTransactions] = await Promise.all([
     getMemberById(memberId),
     getHousehold(),
+    getMemberTrends(memberId),
+    getMemberTransactions(memberId),
   ]);
 
-  const { member, currentHoldings, clearedHoldings } = data;
+  const { member, currentHoldings, clearedHoldings, philosophy } = data;
   if (!member) notFound();
 
-  const memberTransactions = mockTransactions
-    .filter((t) => t.memberId === memberId)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const philosophy = mockPhilosophies.find((p) => p.memberId === memberId);
-  const dailyReturns = memberDailyReturnsMap[memberId] || [];
-  const monthlyAssets = memberMonthlyAssetsMap[memberId] || [];
+  const dailyReturns = trends.dailyReturns;
+  const monthlyAssets = trends.monthlyAssets;
 
   // Build account summaries
   const accountSummaries = member.accounts.map((acc, i) => {
-    const accHoldings = currentHoldings.filter((h) => h.accountId === member.accounts[i]?.id);
+    const accHoldings = currentHoldings.filter((h) => h.accountId === acc.id);
     const accHoldingReturn = accHoldings.reduce((s, h) => s + h.holdingReturn, 0);
     const accRealizedReturn = accHoldings.reduce((s, h) => s + h.realizedReturn, 0);
     const accCumulativeReturn = accHoldings.reduce((s, h) => s + h.cumulativeReturn, 0);
@@ -80,6 +76,9 @@ export default async function MemberDetailPage({ params }: Props) {
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <PageHeader title={member.name} subtitle="成员详情" />
+        <div className="ml-auto">
+          <ExportButton memberId={member.id} label="导出 Excel" />
+        </div>
       </div>
 
       <MemberSummaryCard
@@ -108,15 +107,7 @@ export default async function MemberDetailPage({ params }: Props) {
       </div>
 
       <ChartCard title="当前持仓" subtitle={`共 ${currentHoldings.length} 个持仓`}>
-        {currentHoldings.length > 0 ? (
-          <div className="space-y-2">
-            {currentHoldings.map((h) => (
-              <HoldingListItem key={h.id} holding={h} memberId={memberId} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">暂无持仓</div>
-        )}
+        <CurrentHoldingsClient holdings={currentHoldings} memberId={memberId} />
       </ChartCard>
 
       {clearedHoldings.length > 0 && (

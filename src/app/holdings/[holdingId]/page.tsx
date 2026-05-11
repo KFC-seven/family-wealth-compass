@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { EditHoldingButton } from "@/components/position/EditHoldingForm";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { PositionSummaryCard } from "@/components/position/PositionSummaryCard";
 import { PositionPriceChart } from "@/components/position/PositionPriceChart";
@@ -10,12 +11,11 @@ import { PositionReturnBreakdown } from "@/components/position/PositionReturnBre
 import { PositionNewsCard } from "@/components/position/PositionNewsCard";
 import { PositionAdviceCard } from "@/components/position/PositionAdviceCard";
 import { AssetTrendChart } from "@/components/charts/AssetTrendChart";
-import { getHoldingsData, getHousehold, getHoldingTransactions } from "@/lib/data-source";
-import { mockTransactions } from "@/data/mock-transactions";
-import { mockPriceHistory } from "@/data/mock-price-history";
+import { getHoldingsData, getHousehold, getHoldingTransactions, getHoldingPriceHistory } from "@/lib/data-source";
 import { mockPositionNews } from "@/data/mock-news";
 import { mockPositionAdvice } from "@/data/mock-news";
 import { calculateReturnBreakdown } from "@/lib/returns";
+import type { Transaction, TransactionType } from "@/types/finance";
 
 interface Props {
   params: Promise<{ holdingId: string }>;
@@ -24,9 +24,11 @@ interface Props {
 export default async function PositionDetailPage({ params }: Props) {
   const { holdingId } = await params;
 
-  const [holdingsData, { household }] = await Promise.all([
+  const [holdingsData, { household }, priceHistoryData, rawTransactions] = await Promise.all([
     getHoldingsData(),
     getHousehold(),
+    getHoldingPriceHistory(holdingId),
+    getHoldingTransactions(holdingId),
   ]);
 
   const allHoldings = [...holdingsData.currentHoldings, ...holdingsData.clearedHoldings];
@@ -39,12 +41,22 @@ export default async function PositionDetailPage({ params }: Props) {
   const memberWeight = memberTotalValue > 0 ? holding.marketValue / memberTotalValue : 0;
   const householdWeight = household.totalAssets > 0 ? holding.marketValue / household.totalAssets : 0;
 
-  const priceData = mockPriceHistory[holdingId];
-  const heldAssetId = holding.assetId;
-
-  const positionTransactions = mockTransactions
-    .filter((t) => t.memberId === holding.memberId && t.assetId === heldAssetId)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  // Map API transactions to frontend Transaction type
+  // getHoldingTransactions() returns data filtered by holdingId from DB, so all belong to this holding
+  const positionTransactions: Transaction[] = (rawTransactions || []).map((t: Record<string, unknown>) => ({
+    id: t.id as string,
+    memberId: holding.memberId,
+    accountId: holding.accountId,
+    assetId: holding.assetId,
+    type: t.type as TransactionType,
+    date: (t.tradeDate as string).substring(0, 10),
+    quantity: t.quantity as number | undefined,
+    price: t.price as number | undefined,
+    amount: t.grossAmount as number,
+    fee: (t.fee as number) || undefined,
+    tax: (t.tax as number) || undefined,
+    note: t.note as string | undefined,
+  })).sort((a, b) => a.date.localeCompare(b.date));
 
   const dividendsInterest = positionTransactions
     .filter((t) => t.type === "DIVIDEND" || t.type === "INTEREST")
@@ -64,8 +76,8 @@ export default async function PositionDetailPage({ params }: Props) {
   const advice = mockPositionAdvice[holdingId];
   const isCleared = holding.isCleared;
 
-  // Build value trend data from price history
-  const valueTrend = priceData?.prices.map((p) => ({
+  // Build value trend data from price history (real or mock)
+  const valueTrend = priceHistoryData?.prices.map((p) => ({
     month: p.date,
     value: p.price * holding.quantity,
   })) || [];
@@ -77,6 +89,19 @@ export default async function PositionDetailPage({ params }: Props) {
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <PageHeader title={holding.assetName} subtitle="单仓详情" />
+        <div className="ml-auto">
+          <EditHoldingButton
+            holdingId={holding.id}
+            initial={{
+              assetName: holding.assetName,
+              quantity: holding.quantity,
+              currentPrice: holding.currentPrice,
+              marketValue: holding.marketValue,
+              remainingCost: holding.costBasis,
+              holdingReturn: holding.holdingReturn,
+            }}
+          />
+        </div>
       </div>
 
       <PositionSummaryCard
@@ -87,9 +112,11 @@ export default async function PositionDetailPage({ params }: Props) {
       />
 
       <ChartCard title={`${holding.assetName} 价格走势`} subtitle="红色标记为买入点，绿色标记为卖出点">
-        {priceData ? (
-          <PositionPriceChart prices={priceData.prices} markers={priceData.markers} />
-        ) : null}
+        {priceHistoryData ? (
+          <PositionPriceChart prices={priceHistoryData.prices} markers={priceHistoryData.markers} />
+        ) : (
+          <div className="flex items-center justify-center h-[220px] text-sm text-muted-foreground">暂无价格数据</div>
+        )}
       </ChartCard>
 
       {!isCleared && valueTrend.length > 0 && (
@@ -106,6 +133,7 @@ export default async function PositionDetailPage({ params }: Props) {
         <PositionLifecycleTable transactions={positionTransactions} holdingId={holdingId} />
       </ChartCard>
 
+      {/* 新闻和建议暂用 mock 数据 — 待未来接入新闻数据源和持仓级 AI 建议 */}
       {news.length > 0 && (
         <ChartCard title="相关消息" subtitle={`${news.length} 条相关内容`}>
           <PositionNewsCard news={news} />

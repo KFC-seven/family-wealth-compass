@@ -228,7 +228,7 @@ describe("POST /api/import-sessions/[sessionId]/upload", () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data.fileName).toBe("test.png");
+    expect(body.data[0].fileName).toBe("test.png");
     expect(mockPrisma.importSession.update).toHaveBeenCalled();
   });
 });

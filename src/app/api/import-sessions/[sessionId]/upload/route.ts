@@ -10,7 +10,6 @@ export async function POST(
   try {
     const { sessionId } = await params;
 
-    // 上传开关检查
     if (process.env.UPLOAD_ENABLED !== "true") {
       return createErrorResponse({ code: "UPLOAD_DISABLED", message: "上传功能未启用，请设置 UPLOAD_ENABLED=true" }, 400);
     }
@@ -19,47 +18,64 @@ export async function POST(
     if (!session) return createErrorResponse({ code: "NOT_FOUND", message: "会话不存在" }, 404);
 
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) return createErrorResponse({ code: "VALIDATION_ERROR", message: "缺少文件" }, 400);
+    const fileEntries = formData.getAll("file") as File[];
+    if (!fileEntries || fileEntries.length === 0) {
+      return createErrorResponse({ code: "VALIDATION_ERROR", message: "请选择至少一个文件" }, 400);
+    }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const mimeType = file.type;
-    const originalName = file.name;
+    // Read all files into memory and validate (fail-fast)
+    const files: { buffer: Buffer; mimeType: string; originalName: string }[] = [];
+    for (const file of fileEntries) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const mimeType = file.type;
+      const originalName = file.name;
 
-    // 校验
-    const sizeCheck = validateFileSize(buffer.length);
-    if (!sizeCheck.valid) return createErrorResponse({ code: "VALIDATION_ERROR", message: sizeCheck.message! }, 400);
+      const sizeCheck = validateFileSize(buffer.length);
+      if (!sizeCheck.valid) {
+        return createErrorResponse({ code: "VALIDATION_ERROR", message: `${originalName}: ${sizeCheck.message}` }, 400);
+      }
+      const mimeCheck = validateMimeType(mimeType);
+      if (!mimeCheck.valid) {
+        return createErrorResponse({ code: "VALIDATION_ERROR", message: `${originalName}: ${mimeCheck.message}` }, 400);
+      }
+      const extCheck = validateExtension(originalName);
+      if (!extCheck.valid) {
+        return createErrorResponse({ code: "VALIDATION_ERROR", message: `${originalName}: ${extCheck.message}` }, 400);
+      }
+      files.push({ buffer, mimeType, originalName });
+    }
 
-    const mimeCheck = validateMimeType(mimeType);
-    if (!mimeCheck.valid) return createErrorResponse({ code: "VALIDATION_ERROR", message: mimeCheck.message! }, 400);
-
-    const extCheck = validateExtension(originalName);
-    if (!extCheck.valid) return createErrorResponse({ code: "VALIDATION_ERROR", message: extCheck.message! }, 400);
-
-    // 存储
+    // Save all files in parallel
     const storage = getStorageProvider();
-    const saved = await storage.save({ buffer, originalFileName: originalName, mimeType });
+    const savedFiles = await Promise.all(
+      files.map((f) => storage.save({ buffer: f.buffer, originalFileName: f.originalName, mimeType: f.mimeType })),
+    );
 
-    // 更新 session
+    // Store as JSON array for multi-file, plain string for single file
+    const storageKeys = savedFiles.map((f) => f.storageKey);
+    const storageKey = storageKeys.length === 1 ? storageKeys[0] : JSON.stringify(storageKeys);
+
     await prisma.importSession.update({
       where: { id: sessionId },
       data: {
-        originalFileName: saved.originalFileName,
-        fileMimeType: saved.mimeType,
-        fileSizeBytes: saved.sizeBytes,
-        fileHash: saved.hash,
-        storageProvider: saved.storageProvider,
-        storageKey: saved.storageKey,
-        fileUrl: saved.url,
+        originalFileName: savedFiles[0].originalFileName,
+        fileMimeType: savedFiles[0].mimeType,
+        fileSizeBytes: savedFiles.reduce((sum, f) => sum + f.sizeBytes, 0),
+        fileHash: savedFiles[0].hash,
+        storageProvider: savedFiles[0].storageProvider,
+        storageKey,
+        fileUrl: savedFiles[0].url,
         status: "UPLOADED",
       },
     });
 
-    return createSuccessResponse({
-      fileName: saved.originalFileName,
-      mimeType: saved.mimeType,
-      sizeBytes: saved.sizeBytes,
-    });
+    return createSuccessResponse(
+      savedFiles.map((f) => ({
+        fileName: f.originalFileName,
+        mimeType: f.mimeType,
+        sizeBytes: f.sizeBytes,
+      })),
+    );
   } catch (err) {
     return handleApiError(err);
   }

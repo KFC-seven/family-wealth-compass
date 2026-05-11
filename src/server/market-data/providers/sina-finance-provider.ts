@@ -9,13 +9,13 @@ const SINA_REFERER = "https://finance.sina.com.cn";
  * 新浪财经行情 Provider。
  *
  * 免费公开接口，无需注册 / API Key。
- * 覆盖 A 股（沪深）、美股、ETF。
+ * 覆盖 A 股（沪深）、美股、ETF、SGE 黄金。
  *
  * 启用条件: MARKET_DATA_ENABLE_SINA_FINANCE=true
  */
 export class SinaFinanceProvider implements MarketDataProvider {
   name = "sina-finance";
-  supportedAssetTypes: AssetTypeEnum[] = ["A_SHARE", "ETF", "US_STOCK"];
+  supportedAssetTypes: AssetTypeEnum[] = ["A_SHARE", "ETF", "US_STOCK", "GOLD_ACCUMULATION"];
 
   private enabled: boolean;
 
@@ -121,6 +121,11 @@ function buildSinaSymbol(asset: MarketAsset): string | null {
   const code = asset.code?.trim();
   if (!code) return null;
 
+  // Gold accumulation (SGE): lowercase the code, e.g., AU9999 → au9999
+  if (asset.type === "GOLD_ACCUMULATION") {
+    return code.toLowerCase();
+  }
+
   // US stock: non-numeric code
   if (!/^\d+$/.test(code)) {
     return `gb_${code.toLowerCase()}`;
@@ -149,6 +154,14 @@ function parseSinaResponse(text: string, symbol: string): number | null {
 
   const fields = match[1].split(",");
   if (fields.length < 2) return null;
+
+  // Gold (SGE): symbol like au9999 (lowercase, no prefix)
+  // Format: name,open,prev_close,high,low,price,bid,ask,volume,amount,market,variety,date
+  // Price at index 5 (最新价)
+  if (!symbol.startsWith("sh") && !symbol.startsWith("sz") && !symbol.startsWith("gb_")) {
+    const price = parseFloat(fields[5]);
+    return isNaN(price) ? null : price;
+  }
 
   // A-share (sh/sz): index 3 = current price
   if (symbol.startsWith("sh") || symbol.startsWith("sz")) {

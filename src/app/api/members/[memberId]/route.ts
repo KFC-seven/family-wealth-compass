@@ -1,5 +1,7 @@
 import { prisma } from "@/server/db/prisma";
 import { createSuccessResponse, createErrorResponse, handleApiError } from "@/server/api/response";
+import { validateBody } from "@/server/api/validators";
+import { memberUpdateSchema } from "@/server/api/validators";
 import { decimalToNumber, dateToISO } from "@/server/finance/mappers";
 
 export async function GET(
@@ -34,6 +36,7 @@ export async function GET(
       displayName: member.displayName,
       roleLabel: member.roleLabel,
       isAdmin: member.isAdmin,
+      isActive: member.isActive,
       accounts: member.accounts.map((a) => ({
         id: a.id,
         name: a.name,
@@ -59,6 +62,37 @@ export async function GET(
         openedAt: dateToISO(h.createdAt),
       })),
       investorProfile: member.investorProfile ?? null,
+    });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ memberId: string }> }
+) {
+  try {
+    const { memberId } = await params;
+    const result = await validateBody(request, memberUpdateSchema);
+    if ("error" in result) return result.error;
+
+    const existing = await prisma.member.findUnique({ where: { id: memberId } });
+    if (!existing) {
+      return createErrorResponse({ code: "NOT_FOUND", message: "成员不存在" }, 404);
+    }
+
+    const updated = await prisma.member.update({
+      where: { id: memberId },
+      data: result.data as any,
+    });
+
+    return createSuccessResponse({
+      id: updated.id,
+      displayName: updated.displayName,
+      roleLabel: updated.roleLabel,
+      isAdmin: updated.isAdmin,
+      isActive: updated.isActive,
     });
   } catch (err) {
     return handleApiError(err);

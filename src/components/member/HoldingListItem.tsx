@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatSignedMoney, formatPercent, formatMoney } from "@/lib/format";
-import { ASSET_TYPE_LABELS } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { AssetTypeBadge } from "@/components/financial/GeneralBadges";
 import type { Holding } from "@/types/finance";
 
@@ -26,7 +26,7 @@ export function HoldingListItem({ holding, memberId }: HoldingListItemProps) {
           )}
         </div>
         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-          <span>{ASSET_TYPE_LABELS[holding.assetType]}</span>
+          <span>{formatAssetType(holding.assetType)}</span>
           <span>市值 {formatMoney(holding.marketValue)}</span>
           <span>成本 {formatMoney(holding.costBasis)}</span>
         </div>

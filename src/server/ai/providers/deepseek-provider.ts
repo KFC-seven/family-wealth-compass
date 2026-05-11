@@ -53,7 +53,7 @@ export class DeepSeekProvider implements AiProvider {
               { role: "user", content: userPrompt },
             ],
             temperature: 0.3,
-            max_tokens: 4096,
+            max_tokens: 8192,
             response_format: { type: "json_object" },
           }),
           signal: controller.signal,
@@ -115,6 +115,7 @@ ${OUTPUT_SCHEMA}
 - adviceType 必须从枚举值中选择
 - disclaimer 必须包含"不构成确定性投资指令"
 - 建议必须包含 reason、riskLevel、triggerCondition、uncertainty、philosophyMatch
+- newsItems: 从输入的 newsHighlights 中，财经/科技/时政 每类各选最重要的 10 条（共 30 条），按 importance 降序排列（high > medium > low），保持原始 title/impact/summary 不变
 - 不得使用"保证收益""必赚""无风险""立即买入""满仓""梭哈"等词汇`;
 }
 

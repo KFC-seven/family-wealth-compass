@@ -42,21 +42,48 @@ export const api = {
       totalAssets: number;
       cashBalance: number;
       memberCount: number;
+      holdingReturn: number;
+      realizedReturn: number;
+      cumulativeReturn: number;
+      todayReturn: number;
+      holdingReturnRate: number | null;
+      cumulativeReturnRate: number | null;
     }>("/portfolio/household-summary"),
 
   members: () =>
-    request<Array<{ id: string; name: string; roleLabel?: string; isAdmin: boolean }>>("/members"),
+    request<Array<{ id: string; name: string; roleLabel?: string; isAdmin: boolean; isActive?: boolean }>>("/members"),
 
   member: (id: string) =>
     request<{
       id: string;
       name: string;
-      accounts: Array<{ id: string; name: string; type: string }>;
+      accounts: Array<{ id: string; name: string; type: string; platform?: string; currency?: string }>;
       holdings: Array<{
         id: string; assetName: string; assetType: string;
         marketValue: number; holdingReturn: number; cumulativeReturn: number;
       }>;
     }>(`/members/${id}`),
+
+  updateMember: (memberId: string, data: Record<string, unknown>) =>
+    request<{ id: string; displayName: string | null; roleLabel: string | null; isAdmin: boolean; isActive: boolean }>(
+      `/members/${memberId}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    ),
+
+  memberProfile: (memberId: string) =>
+    request<{
+      memberId: string; riskPreference: string; investmentHorizon: string;
+      primaryGoal: string; maxSingleAssetWeight: number; maxIndustryWeight: number;
+      minCashReserveMonths: number; preferredAssets: string[];
+      avoidedAssetsOrBehaviors: string[]; tradingFrequencyPreference: string;
+      drawdownTolerance: string; adviceStyle: string; customPhilosophyText: string;
+    } | null>(`/members/${memberId}/profile`),
+
+  updateMemberProfile: (memberId: string, data: Record<string, unknown>) =>
+    request<{ id: string; memberId: string }>(`/members/${memberId}/profile`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 
   memberSummary: (id: string) =>
     request<{
@@ -87,6 +114,12 @@ export const api = {
       grossAmount: number; netAmount: number;
     }>>(`/holdings/${id}/transactions`),
 
+  holdingPriceHistory: (id: string) =>
+    request<{
+      prices: Array<{ date: string; price: number }>;
+      markers: Array<{ date: string; type: string; quantity: number; price: number; amount: number }>;
+    }>(`/holdings/${id}/price-history`),
+
   transactions: () =>
     request<Array<{
       id: string; type: string; tradeDate: string; grossAmount: number;
@@ -103,7 +136,36 @@ export const api = {
     request<{
       appearance: unknown; returnMethod: unknown;
       pushSettings: unknown; dataSourceSettings: unknown;
+      scheduledJobSettings?: unknown;
+      household: { id: string; name: string; baseCurrency: string; permissionMode: string } | null;
+      householdDisplay: { totalAssetsDisplay: string };
+      assetTypeConfig: Array<Record<string, unknown>>;
     }>("/settings"),
+
+  updateSettings: (data: Record<string, unknown>) =>
+    request<{ id: string }>("/settings", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateHousehold: (data: Record<string, unknown>) =>
+    request<{ ok: boolean }>("/settings/household", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  accounts: () =>
+    request<Array<{
+      id: string; memberId: string; memberName: string; name: string;
+      type: string; platform: string | null; currency: string;
+      includeInTotal: boolean; isActive: boolean;
+    }>>("/accounts"),
+
+  updateAccount: (accountId: string, data: Record<string, unknown>) =>
+    request<{ id: string; includeInTotal: boolean; isActive: boolean }>(
+      `/accounts/${accountId}`,
+      { method: "PATCH", body: JSON.stringify(data) }
+    ),
 
   // Phase 8: Jobs
   jobs: () =>
@@ -162,6 +224,20 @@ export const api = {
     return json.data as { fileName: string; mimeType: string; sizeBytes: number };
   },
 
+  uploadImportFiles: async (sessionId: string, files: File[]) => {
+    const form = new FormData();
+    for (const file of files) {
+      form.append("file", file);
+    }
+    const res = await fetch(`${API_BASE}/api/import-sessions/${sessionId}/upload`, {
+      method: "POST",
+      body: form,
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error?.message ?? "Upload failed");
+    return json.data as Array<{ fileName: string; mimeType: string; sizeBytes: number }>;
+  },
+
   recognizeImport: (sessionId: string) =>
     request<{ provider: string; rowCount: number; confidence: number; durationMs: number }>(
       `/import-sessions/${sessionId}/recognize`,
@@ -206,4 +282,33 @@ export const api = {
       `/import-sessions/${sessionId}/confirm`,
       { method: "POST", body: JSON.stringify(data) },
     ),
+
+  // ── Dashboard real data ──
+  portfolioDailyReturns: () =>
+    request<Array<{ date: string; value: number }>>("/portfolio/daily-returns"),
+
+  portfolioMonthlyAssets: () =>
+    request<Array<{ month: string; value: number }>>("/portfolio/monthly-assets"),
+
+  portfolioRiskAlerts: () =>
+    request<Array<{
+      id: string;
+      type: "warning" | "danger" | "info";
+      title: string;
+      description: string;
+      relatedAsset?: string;
+    }>>("/portfolio/risk-alerts"),
+
+  memberTrends: (id: string) =>
+    request<{
+      dailyReturns: Array<{ date: string; value: number }>;
+      monthlyAssets: Array<{ month: string; value: number }>;
+    }>(`/members/${id}/trends`),
+
+  memberTransactions: (id: string) =>
+    request<Array<{
+      id: string; memberId: string; accountId: string; assetId: string | null;
+      type: string; tradeDate: string; quantity: number | null; price: number | null;
+      grossAmount: number; fee: number | null; netAmount: number; note: string | null;
+    }>>(`/members/${id}/transactions`),
 };

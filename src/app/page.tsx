@@ -10,7 +10,7 @@ import { RiskAlertCard } from "@/components/financial/RiskAlertCard";
 import { DailyBriefPreviewCard } from "@/components/financial/DailyBriefPreviewCard";
 import { CashBalanceCard } from "@/components/financial/CashBalanceCard";
 import { getHousehold } from "@/lib/data-source";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType, AssetType } from "@/types/finance";
 
 const ASSET_COLORS: Record<string, string> = {
   cash: "#6b7280", aShare: "#b91c1c", usStock: "#2563eb",
@@ -41,7 +41,7 @@ export default async function Home() {
     typeMap[h.assetType].push({ name: h.assetName, value: h.marketValue });
   });
   const householdTypeLevel = Object.entries(typeMap).map(([type, items]) => ({
-    name: ASSET_TYPE_LABELS[type as AssetType] || type,
+    name: formatAssetType(type),
     value: items.reduce((s, i) => s + i.value, 0),
     color: ASSET_COLORS[type] || "#86868b",
     type: type as AssetType,

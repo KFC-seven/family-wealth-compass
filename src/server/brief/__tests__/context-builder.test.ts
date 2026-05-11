@@ -125,8 +125,8 @@ describe("buildBriefContext", () => {
     expect(ctx.members[0].role).toBe("家长");
     expect(ctx.members[0].holdings).toHaveLength(1);
     expect(ctx.members[0].holdings[0].name).toBe("沪深300ETF");
-    expect(ctx.newsHighlights).toHaveLength(2);
-    expect(ctx.marketSummary).toBeTruthy();
+    expect(ctx.newsHighlights).toHaveLength(0);
+    expect(ctx.marketSummary).toBe("");
   });
 
   it("throws when no household exists", async () => {
@@ -263,7 +263,7 @@ describe("buildBriefContext", () => {
     expect(ctx.members[0].riskPreference).toBe("BALANCED");
   });
 
-  it("divides dailyReturn equally among members", async () => {
+  it("sets member dailyReturn to 0 (not attributable per member)", async () => {
     mockPrisma.household.findFirst.mockResolvedValue(makeHousehold());
     mockPrisma.member.findMany.mockResolvedValue([
       makeMember({ id: "mem-001", name: "张三", holdings: [makeHolding()] }),
@@ -272,19 +272,16 @@ describe("buildBriefContext", () => {
     mockPrisma.portfolioSnapshot.findFirst.mockResolvedValue(makeSnapshot({ dailyReturn: 2000 }));
 
     const ctx = await buildBriefContext(mockDate);
-    expect(ctx.members[0].dailyReturn).toBe(1000);
-    expect(ctx.members[1].dailyReturn).toBe(1000);
+    expect(ctx.members[0].dailyReturn).toBe(0);
+    expect(ctx.members[1].dailyReturn).toBe(0);
   });
 
-  it("always contains mock news highlights", async () => {
+  it("has empty news highlights (removed mock data)", async () => {
     mockPrisma.household.findFirst.mockResolvedValue(makeHousehold());
     mockPrisma.member.findMany.mockResolvedValue([]);
     mockPrisma.portfolioSnapshot.findFirst.mockResolvedValue(makeSnapshot());
 
     const ctx = await buildBriefContext(mockDate);
-    expect(ctx.newsHighlights.length).toBeGreaterThanOrEqual(2);
-    expect(ctx.newsHighlights[0].title).toBeTruthy();
-    expect(ctx.newsHighlights[0].impact).toBe("neutral");
-    expect(ctx.newsHighlights[0].importance).toBe("medium");
+    expect(ctx.newsHighlights).toHaveLength(0);
   });
 });

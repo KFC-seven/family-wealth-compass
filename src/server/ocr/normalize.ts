@@ -14,7 +14,7 @@ export function normalizeAmount(raw: string | undefined): string {
   if (s.endsWith("%")) s = s.slice(0, -1);
   // 验证是否有效数字
   if (s === "" || s === "-" || s === ".") return "";
-  if (!/^-?[\d.]+$/.test(s)) return "";
+  if (!/^[+-]?[\d.]+$/.test(s)) return "";
   return s;
 }
 
@@ -23,14 +23,12 @@ export function normalizeAssetType(raw: string | undefined): string {
   if (!raw) return "";
   const t = raw.trim();
   const map: Record<string, string> = {
+    "股票": "A_SHARE", "A股": "A_SHARE", "a股": "A_SHARE",
+    "美股": "US_STOCK", "港股": "HK_STOCK",
+    "基金": "MUTUAL_FUND", "场内基金": "ETF", "场外基金": "MUTUAL_FUND",
+    "ETF": "ETF", "公募基金": "MUTUAL_FUND", "黄金": "GOLD_ACCUMULATION", "积存金": "GOLD_ACCUMULATION",
+    "债券": "BOND", "债基": "BOND", "银行理财": "BANK_WEALTH", "理财": "BANK_WEALTH",
     "现金": "CASH", "货币基金": "CASH",
-    "A股": "A_SHARE", "股票": "A_SHARE", "a股": "A_SHARE",
-    "美股": "US_STOCK", "us_stock": "US_STOCK",
-    "场内基金": "ETF", "ETF": "ETF", "etf": "ETF",
-    "场外基金": "MUTUAL_FUND", "基金": "MUTUAL_FUND", "公募基金": "MUTUAL_FUND",
-    "银行理财": "BANK_WEALTH", "理财": "BANK_WEALTH", "理财产品": "BANK_WEALTH",
-    "黄金": "GOLD_ACCUMULATION", "积存金": "GOLD_ACCUMULATION",
-    "债券": "BOND", "债基": "BOND",
   };
   return map[t] ?? map[t.toLowerCase()] ?? t.toUpperCase();
 }

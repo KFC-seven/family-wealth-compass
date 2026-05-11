@@ -278,8 +278,8 @@ describe("normalizeRecognizedAmount", () => {
 });
 
 describe("mapRecognizedAssetTypeLabel", () => {
-  it('maps "aShare" to "A股"', () => expect(mapRecognizedAssetTypeLabel("aShare")).toBe("A股"));
-  it('maps "mutualFund" to "场外基金"', () => expect(mapRecognizedAssetTypeLabel("mutualFund")).toBe("场外基金"));
+  it('maps "aShare" to "股票"', () => expect(mapRecognizedAssetTypeLabel("aShare")).toBe("股票"));
+  it('maps "mutualFund" to "基金"', () => expect(mapRecognizedAssetTypeLabel("mutualFund")).toBe("基金"));
   it("returns input for unknown type", () => expect(mapRecognizedAssetTypeLabel("UNKNOWN")).toBe("UNKNOWN"));
 });
 

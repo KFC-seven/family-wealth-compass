@@ -1,6 +1,24 @@
 import { prisma } from "@/server/db/prisma";
 import { createSuccessResponse, createErrorResponse, handleApiError } from "@/server/api/response";
 import { confirmTransactionRecords } from "@/server/import/transaction-saver";
+import type { AccountType } from "@/generated/prisma/client";
+
+function inferAccountType(name: string, sourcePlatform: string): AccountType {
+  const n = name.toLowerCase();
+  if (n.includes("支付宝") || sourcePlatform === "ALIPAY") return "ALIPAY_FUND";
+  if (n.includes("证券") || n.includes("券商") || n.includes("华泰") || sourcePlatform === "BROKER") return "BROKER";
+  if (n.includes("银行") || n.includes("招商") || n.includes("工商") || sourcePlatform === "BANK") return "BANK";
+  if (n.includes("黄金") || n.includes("积存")) return "GOLD";
+  if (n.includes("现金") || n.includes("活期")) return "CASH";
+  return "OTHER";
+}
+
+function inferPlatform(sourcePlatform: string): string | null {
+  if (sourcePlatform === "ALIPAY") return "支付宝";
+  if (sourcePlatform === "BROKER") return "券商";
+  if (sourcePlatform === "BANK") return "银行";
+  return null;
+}
 
 /**
  * 确认保存导入结果。
@@ -60,24 +78,48 @@ export async function POST(
 
           const householdId = session.householdId;
 
-          let memberId: string | null = row.memberId;
-          if (!memberId) {
-            const m = await prisma.member.findFirst({ where: { householdId } });
-            memberId = m?.id ?? null;
+          // Resolve member: row.memberId is a name string, not UUID
+          let member = row.memberId
+            ? (await prisma.member.findFirst({ where: { householdId, name: row.memberId } })) ?? null
+            : null;
+          if (!member) {
+            member = await prisma.member.findFirst({ where: { householdId } });
           }
-          if (!memberId) { ignoreCount++; continue; }
+          if (!member) { ignoreCount++; continue; }
+          const memberId = member.id;
 
-          let accountId: string | null = row.accountId;
-          if (!accountId) {
-            const acc = await prisma.account.findFirst({ where: { memberId, householdId } });
-            accountId = acc?.id ?? null;
+          // Resolve account: row.accountId is a name string, not UUID
+          let account = row.accountId
+            ? (await prisma.account.findFirst({ where: { memberId, name: row.accountId } })) ?? null
+            : null;
+          if (!account) {
+            // Auto-create account if not found
+            const accountName = row.accountId || "默认账户";
+            const accountType = inferAccountType(accountName, session.sourcePlatform);
+            const platform = inferPlatform(session.sourcePlatform);
+            account = await prisma.account.create({
+              data: {
+                householdId,
+                memberId,
+                name: accountName,
+                type: accountType,
+                platform,
+              },
+            });
           }
-          if (!accountId) { ignoreCount++; continue; }
+          const accountId = account.id;
 
           const qty = row.quantity ? parseFloat(row.quantity.toString()) : 0;
           const price = row.price ? parseFloat(row.price.toString()) : 0;
           const mv = row.marketValue ? parseFloat(row.marketValue.toString()) : qty * price;
-          const cost = row.cost ? parseFloat(row.cost.toString()) : 0;
+          // Use OCR-provided holdingReturn if available, otherwise compute from cost
+          const ocrReturn = row.holdingReturn != null ? parseFloat(row.holdingReturn.toString()) : null;
+          let cost = row.cost ? parseFloat(row.cost.toString()) : 0;
+          // If no cost but holdingReturn is available, infer cost from marketValue - return
+          if (cost === 0 && ocrReturn != null) {
+            cost = mv - ocrReturn;
+          }
+          const holdingReturn = ocrReturn ?? (mv - cost);
 
           const existing = await prisma.holding.findFirst({
             where: { memberId, accountId, assetId: asset.id, status: "CURRENT" },
@@ -91,8 +133,9 @@ export async function POST(
                 currentPrice: price > 0 ? price : undefined,
                 currentMarketValue: mv,
                 remainingCost: cost > 0 ? cost : undefined,
-                holdingReturn: mv - cost,
-                cumulativeReturn: (mv - cost) + parseFloat(existing.realizedReturn.toString()),
+                averageCost: cost > 0 && qty > 0 ? cost / qty : undefined,
+                holdingReturn,
+                cumulativeReturn: holdingReturn + parseFloat(existing.realizedReturn.toString()),
                 latestPriceDate: row.dataDate ?? new Date(),
               },
             });
@@ -110,9 +153,9 @@ export async function POST(
                 currentMarketValue: mv,
                 remainingCost: cost,
                 averageCost: avgCost,
-                holdingReturn: mv - cost,
+                holdingReturn,
                 realizedReturn: 0,
-                cumulativeReturn: mv - cost,
+                cumulativeReturn: holdingReturn,
                 latestPriceDate: row.dataDate ?? new Date(),
               },
             });

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip } from "recharts";
 import { ArrowLeft } from "lucide-react";
-import { ASSET_TYPE_LABELS, AssetType } from "@/types/finance";
+import { formatAssetType, AssetType } from "@/types/finance";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ export function AssetDrilldownChart({ typeLevel, holdingLevel, className }: Asse
           onClick={() => setDrillType(null)}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2 transition-colors"
         >
-          <ArrowLeft className="w-3 h-3" /> {ASSET_TYPE_LABELS[drillType as AssetType] || drillType}
+          <ArrowLeft className="w-3 h-3" /> {formatAssetType(drillType)}
         </button>
       )}
 

@@ -2,7 +2,7 @@
 
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip } from "recharts";
 import { AssetAllocation } from "@/types/finance";
-import { ASSET_TYPE_LABELS } from "@/types/finance";
+import { formatAssetType } from "@/types/finance";
 import { formatMoney } from "@/lib/format";
 
 const ASSET_COLORS: Record<string, string> = {
@@ -20,11 +20,16 @@ interface AssetAllocationChartProps {
 }
 
 export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
-  const chartData = data.map((item) => ({
-    name: ASSET_TYPE_LABELS[item.type],
-    value: item.value,
-    color: ASSET_COLORS[item.type] || "#86868b",
-  }));
+  // Merge items with the same simplified label to avoid duplicate keys
+  const merged: Record<string, { name: string; value: number; color: string }> = {};
+  data.forEach((item) => {
+    const name = formatAssetType(item.type);
+    if (!merged[name]) {
+      merged[name] = { name, value: 0, color: ASSET_COLORS[item.type] || "#86868b" };
+    }
+    merged[name].value += item.value;
+  });
+  const chartData = Object.values(merged);
 
   return (
     <div className="w-full h-[220px]">

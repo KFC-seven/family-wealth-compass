@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 
 interface RecognitionProgressProps {
   status: "idle" | "uploading" | "recognizing" | "done" | "error";
+  fileCount?: number;
 }
 
-export function RecognitionProgress({ status }: RecognitionProgressProps) {
+export function RecognitionProgress({ status, fileCount }: RecognitionProgressProps) {
   if (status === "idle") return null;
 
   return (
@@ -16,7 +17,9 @@ export function RecognitionProgress({ status }: RecognitionProgressProps) {
         {status === "uploading" && (
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm font-medium">正在上传...</p>
+            <p className="text-sm font-medium">
+              正在上传{fileCount && fileCount > 1 ? ` (${fileCount} 个文件)` : "..."}
+            </p>
           </div>
         )}
         {status === "recognizing" && (

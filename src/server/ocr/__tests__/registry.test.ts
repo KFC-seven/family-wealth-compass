@@ -161,9 +161,15 @@ describe("AliyunOcrProvider", () => {
     expect(provider.isEnabled()).toBe(true);
   });
 
-  it("recognize throws not implemented", async () => {
+  it("fails with API error when fake credentials used", async () => {
+    process.env.OCR_PROVIDER = "aliyun";
+    process.env.OCR_ENABLED = "true";
+    process.env.ALIYUN_ACCESS_KEY_ID = "fake-id";
+    process.env.ALIYUN_ACCESS_KEY_SECRET = "fake-secret";
+    process.env.ALIYUN_OCR_ENDPOINT = "ocr-api.cn-hangzhou.aliyuncs.com";
     const { AliyunOcrProvider } = await import("../providers/aliyun-ocr-provider");
     const provider = new AliyunOcrProvider();
+    expect(provider.isEnabled()).toBe(true);
     await expect(
       provider.recognize({
         imageBuffer: Buffer.from("fake"),
@@ -171,7 +177,7 @@ describe("AliyunOcrProvider", () => {
         sourcePlatform: "ALIPAY" as any,
         fileName: "test.png",
       }),
-    ).rejects.toThrow("未实现");
+    ).rejects.toThrow(/Aliyun OCR/);
   });
 
   it("healthCheck returns DISABLED when not configured", async () => {

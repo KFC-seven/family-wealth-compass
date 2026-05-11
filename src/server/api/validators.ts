@@ -36,6 +36,51 @@ export const settingsUpdateSchema = z.object({
   pushSettings: z.record(z.string(), z.any()).optional(),
   dataSourceSettings: z.array(z.record(z.string(), z.any())).optional(),
   scheduledJobSettings: z.array(z.record(z.string(), z.any())).optional(),
+  householdDisplay: z.object({
+    totalAssetsDisplay: z.enum(["show", "hide"]).optional(),
+  }).optional(),
+  assetTypeConfig: z.array(z.object({
+    type: z.string(),
+    label: z.string(),
+    enabled: z.boolean().default(true),
+    color: z.string().optional(),
+    riskLevel: z.string().optional(),
+    dailyUpdate: z.boolean().default(false),
+  })).optional(),
+});
+
+export const householdUpdateSchema = z.object({
+  name: z.string().min(1, "家庭名称不能为空").optional(),
+  baseCurrency: z.string().optional(),
+  permissionMode: z.enum(["ALL_VISIBLE", "CUSTOM"]).optional(),
+  totalAssetsDisplay: z.enum(["show", "hide"]).optional(),
+});
+
+export const memberUpdateSchema = z.object({
+  displayName: z.string().optional(),
+  roleLabel: z.string().optional(),
+  isAdmin: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const investorProfileUpdateSchema = z.object({
+  riskPreference: z.string().optional(),
+  investmentHorizon: z.string().optional(),
+  primaryGoal: z.string().optional(),
+  maxSingleAssetWeight: z.number().optional(),
+  maxIndustryWeight: z.number().optional(),
+  minCashReserveMonths: z.number().optional(),
+  preferredAssets: z.array(z.string()).optional(),
+  avoidedAssetsOrBehaviors: z.array(z.string()).optional(),
+  tradingFrequencyPreference: z.string().optional(),
+  drawdownTolerance: z.string().optional(),
+  adviceStyle: z.string().optional(),
+  customPhilosophyText: z.string().optional(),
+});
+
+export const accountUpdateSchema = z.object({
+  includeInTotal: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export async function validateBody<T>(req: Request, schema: z.ZodSchema<T>): Promise<{ data: T } | { error: Response }> {
