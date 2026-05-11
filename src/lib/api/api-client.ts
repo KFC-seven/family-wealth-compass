@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+const SERVER_API_BASE = "http://localhost:3000";
+const API_BASE = typeof window === "undefined"
+  ? (process.env.NEXT_PUBLIC_API_BASE || SERVER_API_BASE)
+  : (process.env.NEXT_PUBLIC_API_BASE || "");
 
 export const USE_API_DATA = process.env.NEXT_PUBLIC_USE_API === "true";
 
